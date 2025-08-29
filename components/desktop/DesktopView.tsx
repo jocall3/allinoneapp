@@ -1,105 +1,47 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { FeatureDock } from './FeatureDock.tsx';
+import React from 'react';
 import { Window } from './Window.tsx';
 import { Taskbar } from './Taskbar.tsx';
+import { FeatureDock } from './FeatureDock.tsx';
 import { ALL_FEATURES } from '../features/index.ts';
 import type { Feature } from '../../types.ts';
 
+// FIX: Update WindowState to include featureId and optional props.
 interface WindowState {
   id: string;
+  featureId: string;
   position: { x: number; y: number };
   size: { width: number; height: number };
   zIndex: number;
   isMinimized: boolean;
+  props?: any;
 }
 
-const Z_INDEX_BASE = 10;
+interface DesktopViewProps {
+    windows: WindowState[];
+    activeId: string | null;
+    onLaunch: (featureId: string, props?: any) => void;
+    onClose: (id: string) => void;
+    onMinimize: (id: string) => void;
+    onFocus: (id: string) => void;
+    onUpdate: (id: string, updates: Partial<WindowState>) => void;
+}
 
-export const DesktopView: React.FC<{ openFeatureId?: string }> = ({ openFeatureId }) => {
-    const [windows, setWindows] = useState<Record<string, WindowState>>({});
-    const [activeId, setActiveId] = useState<string | null>(null);
-    const [nextZIndex, setNextZIndex] = useState(Z_INDEX_BASE);
+const featuresMap = new Map(ALL_FEATURES.map(f => [f.id, f]));
+
+export const DesktopView: React.FC<DesktopViewProps> = ({ windows, activeId, onLaunch, onClose, onMinimize, onFocus, onUpdate }) => {
     
-    const openWindow = useCallback((featureId: string) => {
-        const newZIndex = nextZIndex + 1;
-        setNextZIndex(newZIndex);
-        setActiveId(featureId);
-
-        setWindows(prev => {
-            const existingWindow = prev[featureId];
-            if (existingWindow) {
-                return {
-                    ...prev,
-                    [featureId]: {
-                        ...existingWindow,
-                        isMinimized: false,
-                        zIndex: newZIndex,
-                    }
-                };
-            }
-
-            const openWindowsCount = Object.values(prev).filter(w => !w.isMinimized).length;
-            const newWindow: WindowState = {
-                id: featureId,
-                position: { x: 50 + openWindowsCount * 30, y: 50 + openWindowsCount * 30 },
-                size: { width: 800, height: 600 },
-                zIndex: newZIndex,
-                isMinimized: false,
-            };
-            return { ...prev, [featureId]: newWindow };
-        });
-    }, [nextZIndex]);
-    
-    useEffect(() => {
-        if(openFeatureId) {
-            openWindow(openFeatureId);
-        }
-    }, [openFeatureId, openWindow])
-
-    const closeWindow = (id: string) => {
-        setWindows(prev => {
-            const newState = { ...prev };
-            delete newState[id];
-            return newState;
-        });
-    };
-
-    const minimizeWindow = (id: string) => {
-        setWindows(prev => ({
-            ...prev,
-            [id]: { ...prev[id], isMinimized: true }
-        }));
-        setActiveId(null);
-    };
-
-    const focusWindow = (id: string) => {
-        if (id === activeId) return;
-        const newZIndex = nextZIndex + 1;
-        setNextZIndex(newZIndex);
-        setActiveId(id);
-        setWindows(prev => ({
-            ...prev,
-            [id]: { ...prev[id], zIndex: newZIndex }
-        }));
-    };
-    
-    const updateWindowState = (id: string, updates: Partial<WindowState>) => {
-        setWindows(prev => ({
-            ...prev,
-            [id]: { ...prev[id], ...updates }
-        }));
-    }
-
-    const openWindows = Object.values(windows).filter(w => !w.isMinimized);
-    const minimizedWindows = Object.values(windows).filter(w => w.isMinimized);
-    const featuresMap = new Map(ALL_FEATURES.map(f => [f.id, f]));
+    const openWindows = windows.filter(w => !w.isMinimized);
+    const minimizedWindows = windows.filter(w => w.isMinimized);
 
     return (
-        <div className="h-full flex flex-col bg-transparent">
-            <FeatureDock onOpen={openWindow} />
-            <div className="flex-grow relative overflow-hidden">
+        <div className="h-full flex flex-col bg-transparent relative">
+            <FeatureDock onOpen={onLaunch} />
+            <div className="flex-grow relative overflow-hidden pt-60"> {/* Added padding top for the dock */}
+                {/* Desktop Background - can be customized later */}
+                <div className="absolute inset-0 bg-gray-800 bg-grid-gray-700/[0.2]"></div>
+                
                 {openWindows.map(win => {
-                    const feature = featuresMap.get(win.id);
+                    const feature = featuresMap.get(win.featureId);
                     if (!feature) return null;
                     return (
                         <Window
@@ -107,17 +49,17 @@ export const DesktopView: React.FC<{ openFeatureId?: string }> = ({ openFeatureI
                             feature={feature}
                             state={win}
                             isActive={win.id === activeId}
-                            onClose={() => closeWindow(win.id)}
-                            onMinimize={() => minimizeWindow(win.id)}
-                            onFocus={() => focusWindow(win.id)}
-                            onUpdate={updateWindowState}
+                            onClose={() => onClose(win.id)}
+                            onMinimize={() => onMinimize(win.id)}
+                            onFocus={() => onFocus(win.id)}
+                            onUpdate={onUpdate}
                         />
                     );
                 })}
             </div>
             <Taskbar
-                minimizedWindows={minimizedWindows.map(w => featuresMap.get(w.id)).filter(Boolean) as Feature[]}
-                onRestore={openWindow}
+                minimizedWindows={minimizedWindows.map(w => featuresMap.get(w.featureId)).filter(Boolean) as Feature[]}
+                onRestore={onLaunch}
             />
         </div>
     );

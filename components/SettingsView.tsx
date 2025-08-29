@@ -77,7 +77,7 @@ export const SettingsView: React.FC = () => {
                         Hide or show features in the main sidebar. This does not disable them; they can still be accessed via the AI Command Center.
                     </p>
                     <div className="space-y-2">
-                        {ALL_FEATURES.filter(f => f.id !== 'ai-command-center').map(feature => {
+                        {ALL_FEATURES.filter(f => f.id !== 'ai-command-center' && f.id !== 'settings').map(feature => {
                             const isVisible = !state.hiddenFeatures.includes(feature.id);
                             return (
                                 <div key={feature.id} className="flex items-center justify-between p-4 bg-surface border border-border rounded-lg">
@@ -134,7 +134,7 @@ export const SettingsView: React.FC = () => {
                     <h2 className="text-2xl font-bold border-b border-border pb-2 mb-4">About</h2>
                      <div className="p-4 bg-surface border border-border rounded-lg text-text-secondary">
                         <p><strong>DevCore AI Toolkit</strong></p>
-                        <p>Version 1.1.0</p>
+                        <p>Version 2.0.0 (Desktop Environment)</p>
                         <p>Created by James Burvel O'Callaghan III for Citibank Demo Business Inc Powered by Google Gemini</p>
                      </div>
                 </section>

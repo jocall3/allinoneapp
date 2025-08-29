@@ -1,28 +1,25 @@
-
 import React from 'react';
 import type { ViewType, SidebarItem } from '../types';
 import { useAppContext } from '../contexts/GlobalStateContext';
 import { logout } from '../services';
-import { ArrowLeftOnRectangleIcon } from './icons';
+import { ArrowLeftOnRectangleIcon, CommandCenterIcon, ProjectExplorerIcon, ConnectionsIcon, Cog6ToothIcon } from './icons.tsx';
 
 interface LeftSidebarProps {
-  items: SidebarItem[];
-  activeView: ViewType;
-  onNavigate: (view: ViewType, props?: any) => void;
+  onLaunchFeature: (featureId: string) => void;
 }
 
 const Tooltip: React.FC<{ text: string, children: React.ReactNode }> = ({ text, children }) => {
   return (
     <div className="group relative flex justify-center">
       {children}
-      <span className="absolute left-14 p-2 scale-0 transition-all rounded bg-gray-800 border border-gray-900 text-xs text-white group-hover:scale-100 whitespace-nowrap z-50">
+      <span className="absolute left-16 p-2 scale-0 transition-all rounded bg-gray-800 border border-gray-900 text-xs text-white group-hover:scale-100 whitespace-nowrap z-50">
         {text}
       </span>
     </div>
   );
 };
 
-export const LeftSidebar: React.FC<LeftSidebarProps> = ({ items, activeView, onNavigate }) => {
+export const LeftSidebar: React.FC<LeftSidebarProps> = ({ onLaunchFeature }) => {
     const { state, dispatch } = useAppContext();
     const { githubUser: user } = state;
 
@@ -31,51 +28,55 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ items, activeView, onN
         dispatch({ type: 'LOGOUT' });
     };
 
+  const coreItems = [
+    { id: 'ai-command-center', label: 'AI Command Center', icon: <CommandCenterIcon /> },
+    { id: 'project-explorer', label: 'Project Explorer', icon: <ProjectExplorerIcon /> },
+    { id: 'connections', label: 'Connections', icon: <ConnectionsIcon /> },
+  ];
+
   return (
-    <nav className="w-20 h-full bg-surface border-r border-border flex flex-col py-4 px-2">
+    <nav className="w-20 h-full bg-surface border-r border-border flex flex-col py-4 px-2 z-20">
       <div className="flex-shrink-0 flex justify-center p-2 mb-4">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary">
                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
       </div>
        <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col items-center gap-2 pt-4">
-        {items.map((item) => {
-          const isActive = activeView === item.view;
-
-          return (
+        {coreItems.map((item) => (
             <Tooltip key={item.id} text={item.label}>
               <button
-                onClick={() => {
-                  if (item.action) {
-                    item.action();
-                  } else {
-                    onNavigate(item.view, item.props);
-                  }
-                }}
-                className={`flex items-center justify-center w-12 h-12 rounded-lg transition-colors duration-200
-                  ${isActive ? 'bg-primary/10 text-primary' : 'text-text-secondary hover:bg-gray-100'}`
-                }
+                onClick={() => onLaunchFeature(item.id)}
+                className="flex items-center justify-center w-12 h-12 rounded-lg transition-colors duration-200 text-text-secondary hover:bg-gray-100"
               >
                 {item.icon}
               </button>
             </Tooltip>
-          );
-        })}
+        ))}
       </div>
       <div className="mt-auto flex-shrink-0 flex flex-col items-center gap-4">
+         <Tooltip text="Settings">
+            <button
+              onClick={() => onLaunchFeature('settings')}
+              className="flex items-center justify-center w-12 h-12 rounded-lg text-text-secondary hover:bg-gray-100"
+            >
+              <Cog6ToothIcon />
+            </button>
+         </Tooltip>
          {user && (
             <Tooltip text={user.name || user.login}>
                  <img src={user.avatar_url} alt={user.login} className="w-10 h-10 rounded-full border-2 border-border" />
             </Tooltip>
          )}
-         <Tooltip text="Logout">
-            <button
-              onClick={handleLogout}
-              className="flex items-center justify-center w-12 h-12 rounded-lg text-text-secondary hover:bg-gray-100"
-            >
-              <ArrowLeftOnRectangleIcon />
-            </button>
-         </Tooltip>
+         {user && (
+            <Tooltip text="Logout">
+                <button
+                onClick={handleLogout}
+                className="flex items-center justify-center w-12 h-12 rounded-lg text-text-secondary hover:bg-gray-100"
+                >
+                <ArrowLeftOnRectangleIcon />
+                </button>
+            </Tooltip>
+         )}
       </div>
     </nav>
   );

@@ -1,3 +1,5 @@
+import React from 'react';
+
 // Represents the serializable file metadata stored in IndexedDB.
 // It purposefully omits the non-serializable `handle`.
 export interface StorableFileNode {

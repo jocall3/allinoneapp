@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 // FIX: Corrected import paths for services.
 import { logError, debugErrorStream } from '../services/index';
@@ -17,10 +18,13 @@ interface State {
 }
 
 export class ErrorBoundary extends React.Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = { hasError: false, error: null, aiHelp: '', isAiLoading: false };
-  }
+  // FIX: Initialize state as a class property instead of in the constructor. This is a more modern syntax and resolves the compiler errors about 'state' not existing.
+  state: State = {
+    hasError: false,
+    error: null,
+    aiHelp: '',
+    isAiLoading: false,
+  };
 
   static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, error };

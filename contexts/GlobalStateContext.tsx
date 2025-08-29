@@ -1,4 +1,7 @@
-
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+*/
 import React, { createContext, useReducer, useContext, useEffect, useCallback } from 'react';
 import type { ViewType, FileNode, SortOption, ModalState, User, DashboardData, Repo } from '../types';
 import { ingestDirectory, openDirectoryAndIngest } from '../services/fileSystemService';
@@ -21,11 +24,12 @@ interface AppState {
     isDashboardVisible: boolean;
     dashboardData: DashboardData | null;
     isDashboardLoading: boolean;
-    activeView: ViewType;
-    viewProps: any;
     hiddenFeatures: string[];
     selectedRepo: { owner: string; repo: string } | null;
     projectFiles: FileNode | null;
+    isVoiceCommanderOpen: boolean;
+    // FIX: Add state to handle feature launch requests from anywhere in the app.
+    launchRequest: { featureId: string; props?: any; id: number; } | null;
 }
 
 type Action =
@@ -45,10 +49,13 @@ type Action =
     | { type: 'TOGGLE_DASHBOARD' }
     | { type: 'SET_DASHBOARD_LOADING'; payload: boolean }
     | { type: 'SET_DASHBOARD_DATA'; payload: DashboardData | null }
-    | { type: 'SET_VIEW'; payload: { view: ViewType, props?: any } }
     | { type: 'TOGGLE_FEATURE_VISIBILITY'; payload: { featureId: string } }
     | { type: 'SET_SELECTED_REPO'; payload: { owner: string; repo: string } }
-    | { type: 'LOAD_PROJECT_FILES'; payload: FileNode };
+    | { type: 'LOAD_PROJECT_FILES'; payload: FileNode }
+    | { type: 'SET_VOICE_COMMANDER_OPEN'; payload: boolean }
+    // FIX: Add actions for launching features to align with the desktop UI paradigm.
+    | { type: 'LAUNCH_FEATURE'; payload: { featureId: string, props?: any } }
+    | { type: 'LAUNCH_FEATURE_CONSUMED' };
 
 
 const initialState: AppState = {
@@ -69,17 +76,17 @@ const initialState: AppState = {
     isDashboardVisible: false,
     dashboardData: null,
     isDashboardLoading: false,
-    activeView: 'ai-command-center',
-    viewProps: {},
     hiddenFeatures: [],
     selectedRepo: null,
     projectFiles: null,
+    isVoiceCommanderOpen: false,
+    // FIX: Initialize launchRequest state.
+    launchRequest: null,
 };
 
 const reducer = (state: AppState, action: Action): AppState => {
     switch (action.type) {
         case 'SET_ROOT_HANDLE':
-            // Reset most of the state but persist authentication
             return { 
                 ...initialState, 
                 rootHandle: action.payload, 
@@ -138,12 +145,9 @@ const reducer = (state: AppState, action: Action): AppState => {
                  githubToken: null,
                  githubUser: null,
                  isGithubConnected: false,
-                 // Also reset repo-specific state
                  selectedRepo: null,
                  projectFiles: null,
              };
-        case 'SET_VIEW':
-            return { ...state, activeView: action.payload.view, viewProps: action.payload.props || {} };
         case 'TOGGLE_FEATURE_VISIBILITY': {
             const { featureId } = action.payload;
             const isHidden = state.hiddenFeatures.includes(featureId);
@@ -158,12 +162,20 @@ const reducer = (state: AppState, action: Action): AppState => {
             return { ...state, selectedRepo: action.payload };
         case 'LOAD_PROJECT_FILES':
             return { ...state, projectFiles: action.payload };
+        case 'SET_VOICE_COMMANDER_OPEN':
+            return { ...state, isVoiceCommanderOpen: action.payload };
+        // FIX: Add reducer cases for launching features.
+        case 'LAUNCH_FEATURE':
+            return { ...state, launchRequest: { ...action.payload, id: Date.now() } };
+        case 'LAUNCH_FEATURE_CONSUMED':
+            return { ...state, launchRequest: null };
         default:
             return state;
     }
 };
 
-const AppContext = createContext<{
+// Renamed AppContext to GlobalStateAppContext for clarity, but AppContext is also fine if only one global context.
+const AppContext = createContext<{ 
     state: AppState;
     dispatch: React.Dispatch<Action>;
     openFolder: () => Promise<void>;
@@ -173,7 +185,8 @@ const AppContext = createContext<{
     openFolder: async () => {},
 });
 
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// RENAMED from AppProvider to GlobalStateProvider to match index.tsx import
+export const GlobalStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [state, dispatch] = useReducer(reducer, initialState);
 
     const openFolder = useCallback(async () => {

@@ -1,183 +1,144 @@
-
-
-import React, { Suspense, useCallback, useMemo, useState, useEffect } from 'react';
-import { ErrorBoundary } from './ErrorBoundary';
+import React, { Suspense, useCallback, useState, useEffect } from 'react';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAppContext } from './contexts/GlobalStateContext';
-import { logEvent, initializeOctokit, validateToken } from './services/index';
-import { ALL_FEATURES, FEATURES_MAP } from './components/features';
-import type { ViewType, SidebarItem } from './types';
-import { ActionManager } from './components/ActionManager';
+import { ALL_FEATURES } from './components/features';
+import type { Feature } from './types';
 import { LeftSidebar } from './components/LeftSidebar';
-import { StatusBar } from './components/StatusBar';
 import { CommandPalette } from './components/CommandPalette';
-import { SettingsView } from './components/SettingsView';
-import { Cog6ToothIcon, HomeIcon, FolderIcon, LinkIcon } from './components/icons';
-import { LoginView } from './components/LoginView';
+import { VoiceCommandModal } from './components/VoiceCommandModal';
+import { DesktopView } from './components/desktop/DesktopView';
 
-
-export const LoadingIndicator: React.FC = () => (
-    <div className="w-full h-full flex items-center justify-center bg-surface">
-        <div className="flex items-center justify-center space-x-2">
-            <div className="w-4 h-4 rounded-full bg-primary animate-pulse" style={{ animationDelay: '0s' }}></div>
-            <div className="w-4 h-4 rounded-full bg-primary animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-            <div className="w-4 h-4 rounded-full bg-primary animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-            <span className="text-text-secondary ml-2">Loading Feature...</span>
-        </div>
-    </div>
-);
-
-interface LocalStorageConsentModalProps {
-  onAccept: () => void;
-  onDecline: () => void;
+// FIX: Added a new WindowState interface to manage the state of each open window in the new desktop environment.
+// FIX: Added optional props to window state to support features launched with initial data.
+interface WindowState {
+  id: string;
+  featureId: string;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  zIndex: number;
+  isMinimized: boolean;
+  props?: any;
 }
 
-const LocalStorageConsentModal: React.FC<LocalStorageConsentModalProps> = ({ onAccept, onDecline }) => {
-  return (
-    <div className="fixed inset-0 bg-gray-900/80 backdrop-blur-sm z-50 flex items-center justify-center">
-      <div 
-        className="bg-surface border border-border rounded-2xl shadow-2xl shadow-black/50 w-full max-w-md m-4 p-8 text-center"
-      >
-        <h2 className="text-2xl mb-4">Store Data Locally?</h2>
-        <p className="text-text-secondary mb-6">
-          This application uses your browser's local storage to save your settings and remember your progress between sessions. This data stays on your computer and is not shared.
-        </p>
-        <div className="flex justify-center gap-4">
-          <button
-            onClick={onDecline}
-            className="px-6 py-2 bg-surface border border-border text-text-primary font-bold rounded-md hover:bg-gray-100 transition-colors"
-          >
-            Decline
-          </button>
-          <button
-            onClick={onAccept}
-            className="btn-primary px-6 py-2"
-          >
-            Accept
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+const Z_INDEX_BASE = 10;
+const featuresMap = new Map(ALL_FEATURES.map(f => [f.id, f]));
 
-const App: React.FC = () => {
+export const App: React.FC = () => {
   const { state, dispatch } = useAppContext();
-  const { activeView, viewProps, hiddenFeatures, githubToken, isGithubConnected } = state;
+  const { isVoiceCommanderOpen, launchRequest } = state;
   const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
-  const [showConsentModal, setShowConsentModal] = useState(false);
+  
+  // FIX: State management for the desktop environment is now centralized in App.tsx.
+  const [windows, setWindows] = useState<Record<string, WindowState>>({});
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [nextZIndex, setNextZIndex] = useState(Z_INDEX_BASE);
 
-  useEffect(() => {
-    try {
-        const consent = localStorage.getItem('devcore_ls_consent');
-        if (!consent) {
-            setShowConsentModal(true);
+  // FIX: New function to handle launching features in new windows. This replaces the old navigation logic.
+  // FIX: Updated to accept optional props for the feature component.
+  const handleLaunchFeature = useCallback((featureId: string, props?: any) => {
+    const newZIndex = nextZIndex + 1;
+    setNextZIndex(newZIndex);
+    setActiveId(featureId);
+
+    setWindows(prev => {
+        const existingWindow = prev[featureId];
+        if (existingWindow) {
+            // If window exists, bring it to front and un-minimize it
+            return {
+                ...prev,
+                [featureId]: {
+                    ...existingWindow,
+                    isMinimized: false,
+                    zIndex: newZIndex,
+                    props: props || existingWindow.props, // Update props if provided
+                }
+            };
         }
-    } catch (e) {
-        console.warn("Could not access localStorage.", e);
-    }
-  }, []);
+        
+        const openWindowsCount = Object.values(prev).filter(w => !w.isMinimized).length;
+        const newWindow: WindowState = {
+            id: featureId,
+            featureId: featureId,
+            position: { x: 100 + openWindowsCount * 30, y: 50 + openWindowsCount * 30 },
+            size: { width: 800, height: 600 },
+            zIndex: newZIndex,
+            isMinimized: false,
+            props: props,
+        };
+        return { ...prev, [featureId]: newWindow };
+    });
+    setCommandPaletteOpen(false); // Close palette after launching
+  }, [nextZIndex]);
 
-   useEffect(() => {
-    // On initial load, try to validate the token from local storage
-    if(githubToken && !isGithubConnected) {
-        validateToken(githubToken)
-            .then(user => {
-                initializeOctokit(githubToken);
-                dispatch({ type: 'SET_GITHUB_TOKEN', payload: { token: githubToken, user } });
-            })
-            .catch(() => {
-                // Token is invalid, clear it
-                dispatch({ type: 'SET_GITHUB_TOKEN', payload: { token: null, user: null } });
-            });
+
+  const handleCloseWindow = (id: string) => {
+    setWindows(prev => {
+        const newState = { ...prev };
+        delete newState[id];
+        return newState;
+    });
+    if (activeId === id) setActiveId(null);
+  };
+
+  const handleMinimizeWindow = (id: string) => {
+      setWindows(prev => ({ ...prev, [id]: { ...prev[id], isMinimized: true } }));
+      if (activeId === id) setActiveId(null);
+  };
+
+  const handleFocusWindow = (id: string) => {
+      if (id === activeId) return;
+      const newZIndex = nextZIndex + 1;
+      setNextZIndex(newZIndex);
+      setActiveId(id);
+      setWindows(prev => ({ ...prev, [id]: { ...prev[id], zIndex: newZIndex } }));
+  };
+  
+  const handleUpdateWindow = (id: string, updates: Partial<WindowState>) => {
+      setWindows(prev => ({ ...prev, [id]: { ...prev[id], ...updates } }));
+  };
+
+  // FIX: Add an effect to handle feature launch requests from the global state.
+  useEffect(() => {
+    if (launchRequest) {
+        handleLaunchFeature(launchRequest.featureId, launchRequest.props);
+        dispatch({ type: 'LAUNCH_FEATURE_CONSUMED' });
     }
-  }, [githubToken, isGithubConnected, dispatch]);
+  }, [launchRequest, dispatch, handleLaunchFeature]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-            e.preventDefault();
-            setCommandPaletteOpen(isOpen => !isOpen);
-        }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen(k => !k);
+      }
+      if(e.key.toLowerCase() === 'v' && e.altKey) {
+        e.preventDefault();
+        dispatch({ type: 'SET_VOICE_COMMANDER_OPEN', payload: true });
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  const handleAcceptConsent = () => {
-    try {
-        localStorage.setItem('devcore_ls_consent', 'granted');
-        window.location.reload();
-    } catch (e) {
-        console.error("Could not write to localStorage.", e);
-        setShowConsentModal(false);
-    }
-  };
-
-  const handleDeclineConsent = () => {
-    try {
-        localStorage.setItem('devcore_ls_consent', 'denied');
-    } catch (e) {
-        console.error("Could not write to localStorage.", e);
-    }
-    setShowConsentModal(false);
-  };
-
-  const handleViewChange = useCallback((view: ViewType, props: any = {}) => {
-    dispatch({ type: 'SET_VIEW', payload: { view, props } });
-    logEvent('view_changed', { view });
-    setCommandPaletteOpen(false);
   }, [dispatch]);
-
-  const sidebarItems: SidebarItem[] = useMemo(() => [
-    { id: 'ai-command-center', label: 'Command Center', icon: <HomeIcon />, view: 'ai-command-center' },
-    { id: 'project-explorer', label: 'Project Explorer', icon: <FolderIcon />, view: 'project-explorer' },
-    ...ALL_FEATURES
-        .filter(feature => !hiddenFeatures.includes(feature.id) && !['ai-command-center', 'project-explorer', 'connections'].includes(feature.id))
-        .map(feature => ({
-            id: feature.id,
-            label: feature.name,
-            icon: feature.icon,
-            view: feature.id as ViewType,
-        })),
-    { id: 'connections', label: 'Connections', icon: <LinkIcon />, view: 'connections' },
-    { id: 'settings', label: 'Settings', icon: <Cog6ToothIcon />, view: 'settings' },
-  ], [hiddenFeatures]);
-
-  const ActiveComponent = useMemo(() => {
-      if (activeView === 'settings') return SettingsView;
-      const featureComponent = FEATURES_MAP.get(activeView as string)?.component;
-      // Fallback to command center's component from the map if the active one isn't found
-      return featureComponent ?? FEATURES_MAP.get('ai-command-center')?.component ?? (() => <div>Component not found</div>);
-  }, [activeView]);
   
-  if (!isGithubConnected) {
-    return <LoginView />;
-  }
-
+  // FIX: The main component structure is now a flexible desktop environment.
   return (
     <ErrorBoundary>
-        <div className="h-screen w-screen font-sans overflow-hidden bg-background">
-            {showConsentModal && <LocalStorageConsentModal onAccept={handleAcceptConsent} onDecline={handleDeclineConsent} />}
-            <div className="relative flex h-full w-full">
-                <LeftSidebar items={sidebarItems} activeView={state.activeView} onNavigate={handleViewChange} />
-                <div className="flex-1 flex min-w-0">
-                    <div className="flex-1 flex flex-col min-w-0">
-                        <main className="relative flex-1 min-w-0 bg-surface/50 overflow-y-auto">
-                            <Suspense fallback={<LoadingIndicator />}>
-                                <div key={activeView} className="w-full h-full">
-                                    <ActiveComponent {...viewProps} />
-                                </div>
-                            </Suspense>
-                            <ActionManager />
-                        </main>
-                        <StatusBar bgImageStatus="loaded" />
-                    </div>
-                </div>
-                <CommandPalette isOpen={isCommandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} onSelect={handleViewChange} />
-            </div>
-        </div>
+      <div className="w-screen h-screen bg-background text-text-primary flex font-sans antialiased overflow-hidden">
+        <LeftSidebar onLaunchFeature={handleLaunchFeature} />
+        <main className="flex-1 relative">
+            <DesktopView 
+                windows={Object.values(windows)}
+                activeId={activeId}
+                onLaunch={handleLaunchFeature}
+                onClose={handleCloseWindow}
+                onMinimize={handleMinimizeWindow}
+                onFocus={handleFocusWindow}
+                onUpdate={handleUpdateWindow}
+            />
+        </main>
+        <CommandPalette isOpen={isCommandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} onSelect={handleLaunchFeature} />
+        <VoiceCommandModal isOpen={isVoiceCommanderOpen} />
+      </div>
     </ErrorBoundary>
   );
 };
-
-export default App;

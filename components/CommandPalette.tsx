@@ -1,12 +1,11 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { ALL_FEATURES } from './features/index.ts';
-import type { ViewType } from '../types.ts';
+import type { FeatureId } from '../types.ts';
 
 interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (view: ViewType) => void;
+  onSelect: (featureId: FeatureId) => void;
 }
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onSelect }) => {
@@ -21,16 +20,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
   }, [isOpen]);
   
   const commandOptions = useMemo(() => {
-    const navigationCommands = [
-      { id: 'ai-feature-builder', name: 'Go to AI Builder', category: 'Navigation', icon: <span />, description: ''},
-    ];
-    
-    const featureCommands = ALL_FEATURES.map(f => ({...f, name: `Open: ${f.name}`}));
-
-     return [
-      ...navigationCommands,
-      ...featureCommands,
-     ].filter(
+     return ALL_FEATURES.filter(
         (feature) =>
           feature.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           feature.category.toLowerCase().includes(searchTerm.toLowerCase())
@@ -54,13 +44,15 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
         e.preventDefault();
         const selected = commandOptions[selectedIndex];
         if (selected) {
-          onSelect(selected.id as ViewType);
+          onSelect(selected.id);
         }
+      } else if (e.key === 'Escape') {
+        onClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, commandOptions, selectedIndex, onSelect]);
+  }, [isOpen, commandOptions, selectedIndex, onSelect, onClose]);
 
   if (!isOpen) return null;
 
@@ -72,7 +64,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
       >
         <input
           type="text"
-          placeholder="Type a command or search..."
+          placeholder="Type a command or search features..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           autoFocus
@@ -84,7 +76,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
               <li
                 key={item.id + index}
                 onMouseDown={() => {
-                   onSelect(item.id as ViewType);
+                   onSelect(item.id);
                 }}
                 className={`flex items-center justify-between p-3 rounded-md cursor-pointer ${
                   selectedIndex === index ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100'

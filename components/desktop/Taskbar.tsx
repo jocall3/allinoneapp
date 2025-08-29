@@ -21,7 +21,7 @@ export const Taskbar: React.FC<TaskbarProps> = ({ minimizedWindows, onRestore })
           title={`Restore ${feature.name}`}
         >
           <div className="w-4 h-4">{feature.icon}</div>
-          <span>{feature.name}</span>
+          <span className="truncate">{feature.name}</span>
         </button>
       ))}
     </div>

@@ -5,9 +5,11 @@
 import { GoogleGenAI, Type, GenerateContentResponse, FunctionDeclaration, Modality } from "@google/genai";
 import { logError } from './telemetryService';
 
-const API_KEY = process.env.API_KEY;
+// FIX: Use VITE_GEMINI_API_KEY consistent with vite.config.ts and .env.local
+const API_KEY = process.env.VITE_GEMINI_API_KEY; 
 if (!API_KEY) {
-  throw new Error("API key not found. Please set the GEMINI_API_KEY environment variable.");
+  // FIX: Updated error message for consistency.
+  throw new Error("API key not found. Please set the VITE_GEMINI_API_KEY environment variable.");
 }
 
 export const ai = new GoogleGenAI({ apiKey: API_KEY });
@@ -36,6 +38,20 @@ export async function generateContent(prompt: string, systemInstruction: string,
     } catch (error) {
          console.error("Error generating content from AI model:", error);
         logError(error as Error, { prompt, systemInstruction });
+        throw error;
+    }
+}
+
+export async function generateContentWithImage(prompt: string, base64Image: string, mimeType: string): Promise<string> {
+    const imagePart = { inlineData: { data: base64Image, mimeType } };
+    const textPart = { text: prompt };
+    const contents = { parts: [imagePart, textPart] };
+    try {
+        const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents });
+        return response.text;
+    } catch (error) {
+        console.error("Error generating content with image from AI model:", error);
+        logError(error as Error, { prompt, hasImage: true });
         throw error;
     }
 }

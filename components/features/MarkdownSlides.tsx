@@ -29,7 +29,8 @@ Easy to create and present.
 export const MarkdownSlides: React.FC = () => {
     const [markdown, setMarkdown] = useState(exampleMarkdown);
     const [currentSlide, setCurrentSlide] = useState(0);
-    const [slideHtml, setSlideHtml] = useState<string | TrustedHTML>('');
+    // FIX: Removed TrustedHTML type as it's not available in the global scope and `string` is sufficient.
+    const [slideHtml, setSlideHtml] = useState<string>('');
     const presentationRef = useRef<HTMLDivElement>(null);
 
     const slides = useMemo(() => markdown.split(/^-{3,}\s*$/m), [markdown]);

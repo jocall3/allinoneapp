@@ -1,5 +1,6 @@
 
-import React, { useState, useCallback } from 'react';
+
+import React, { useState, useCallback, useEffect } from 'react';
 import { Type, FunctionDeclaration } from "@google/genai";
 import { getInferenceFunction, CommandResponse, FEATURE_TAXONOMY, logError } from '../../services/index';
 // FIX: Renamed useGlobalState to useAppContext
@@ -66,20 +67,20 @@ const ExamplePromptButton: React.FC<{ text: string, onClick: (text: string) => v
     </button>
 )
 
-export const AiCommandCenter: React.FC = () => {
+export const AiCommandCenter: React.FC<{ voiceCommand?: string }> = ({ voiceCommand }) => {
     const { dispatch } = useAppContext();
     const [prompt, setPrompt] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [lastResponse, setLastResponse] = useState('');
 
-    const handleCommand = useCallback(async () => {
-        if (!prompt.trim()) return;
+    const handleCommand = useCallback(async (commandToRun: string) => {
+        if (!commandToRun.trim()) return;
 
         setIsLoading(true);
         setLastResponse('');
 
         try {
-            const response: CommandResponse = await getInferenceFunction(prompt, functionDeclarations, knowledgeBase);
+            const response: CommandResponse = await getInferenceFunction(commandToRun, functionDeclarations, knowledgeBase);
             
             if (response.functionCalls && response.functionCalls.length > 0) {
                 const call = response.functionCalls[0];
@@ -89,10 +90,12 @@ export const AiCommandCenter: React.FC = () => {
 
                 switch (name) {
                     case 'navigateTo':
-                        dispatch({ type: 'SET_VIEW', payload: { view: args.featureId }});
+                        // FIX: Dispatch the correct action type 'LAUNCH_FEATURE' instead of the obsolete 'SET_VIEW'.
+                        dispatch({ type: 'LAUNCH_FEATURE', payload: { featureId: args.featureId }});
                         break;
                     case 'runFeatureWithInput':
-                         dispatch({ type: 'SET_VIEW', payload: { view: args.featureId, props: args.props } });
+                         // FIX: Dispatch the correct action type 'LAUNCH_FEATURE' instead of the obsolete 'SET_VIEW'.
+                         dispatch({ type: 'LAUNCH_FEATURE', payload: { featureId: args.featureId, props: args.props } });
                         break;
                     default:
                         setLastResponse(`Unknown command: ${name}`);
@@ -103,17 +106,24 @@ export const AiCommandCenter: React.FC = () => {
             }
 
         } catch (err) {
-            logError(err as Error, { prompt });
+            logError(err as Error, { prompt: commandToRun });
             setLastResponse(err instanceof Error ? err.message : 'An unknown error occurred.');
         } finally {
             setIsLoading(false);
         }
-    }, [prompt, dispatch]);
+    }, [dispatch]);
+
+    useEffect(() => {
+        if (voiceCommand) {
+            setPrompt(voiceCommand);
+            handleCommand(voiceCommand);
+        }
+    }, [voiceCommand, handleCommand]);
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            handleCommand();
+            handleCommand(prompt);
         }
     };
     
@@ -148,7 +158,7 @@ export const AiCommandCenter: React.FC = () => {
                         rows={2}
                     />
                     <button
-                        onClick={handleCommand}
+                        onClick={() => handleCommand(prompt)}
                         disabled={isLoading}
                         className="btn-primary absolute right-3 top-1/2 -translate-y-1/2 px-4 py-2"
                     >

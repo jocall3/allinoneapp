@@ -1,5 +1,7 @@
 {
   "name": "Gemini AI File Manager",
   "description": "A modern, browser-based file manager that leverages the Gemini API for intelligent file organization, search, and actions.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }

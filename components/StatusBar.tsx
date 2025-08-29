@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { GitBranchIcon, BellIcon } from './icons.tsx';
+import { GitBranchIcon, BellIcon, MicrophoneIcon } from './icons.tsx';
+import { useAppContext } from '../contexts/GlobalStateContext.tsx';
 
 type BgImageStatus = 'loading' | 'loaded' | 'error';
 
@@ -54,6 +55,7 @@ const Clock: React.FC = () => {
 
 
 export const StatusBar: React.FC<{ bgImageStatus: BgImageStatus }> = ({ bgImageStatus }) => {
+  const { dispatch } = useAppContext();
   return (
     <footer className="w-full bg-surface/70 backdrop-blur-sm border-t border-border px-4 py-1 flex items-center justify-between text-xs text-text-secondary">
       <div className="flex items-center space-x-4">
@@ -64,6 +66,13 @@ export const StatusBar: React.FC<{ bgImageStatus: BgImageStatus }> = ({ bgImageS
         <StatusMessage status={bgImageStatus} />
       </div>
       <div className="flex items-center space-x-4">
+        <button
+          onClick={() => dispatch({ type: 'SET_VOICE_COMMANDER_OPEN', payload: true })}
+          className="p-1 rounded-md hover:text-primary transition-colors"
+          title="Voice Command (v)"
+        >
+          <MicrophoneIcon />
+        </button>
         <Clock />
         <span className="hidden sm:block">Ready</span>
         <div className="flex items-center space-x-1 cursor-pointer hover:text-primary transition-colors">

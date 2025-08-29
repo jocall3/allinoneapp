@@ -1,8 +1,6 @@
-
-import React, { Suspense, useRef, useState } from 'react';
+import React, { Suspense, useRef } from 'react';
 import type { Feature } from '../../types.ts';
 import { FEATURES_MAP } from '../features/index.ts';
-// FIX: Replaced non-existent LoadingIndicator with LoadingSpinner from shared components.
 import { LoadingSpinner } from '../shared/index.tsx';
 import { MinimizeIcon, XMarkIcon } from '../icons.tsx';
 
@@ -12,6 +10,8 @@ interface WindowState {
   size: { width: number; height: number };
   zIndex: number;
   isMinimized: boolean;
+  // FIX: Add props to WindowState to support features launched with initial data.
+  props?: any;
 }
 
 interface WindowProps {
@@ -61,7 +61,8 @@ export const Window: React.FC<WindowProps> = ({ feature, state, isActive, onClos
         top: state.position.y,
         width: state.size.width,
         height: state.size.height,
-        zIndex: state.zIndex
+        zIndex: state.zIndex,
+        visibility: state.isMinimized ? 'hidden' : 'visible',
       }}
       onMouseDown={() => onFocus(feature.id)}
     >
@@ -80,8 +81,9 @@ export const Window: React.FC<WindowProps> = ({ feature, state, isActive, onClos
       </header>
       <main className="flex-1 overflow-auto bg-slate-800/50 rounded-b-lg">
         {FeatureComponent ? (
-          <Suspense fallback={<LoadingSpinner/>}>
-            <FeatureComponent />
+          <Suspense fallback={<div className="w-full h-full flex items-center justify-center"><LoadingSpinner/></div>}>
+            {/* FIX: Pass props from window state to the feature component. */}
+            <FeatureComponent {...state.props} />
           </Suspense>
         ) : (
             <div className="p-4 text-red-400">Error: Component not found for {feature.name}</div>

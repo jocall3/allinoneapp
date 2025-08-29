@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import type { FileNode, SortOption } from '../types';
 import FileItem from './FileItem';
@@ -48,7 +47,14 @@ const FileGrid: React.FC<FileGridProps> = ({ files, sort, selectedIds, onSelecti
     const handleKeyDown = (e: React.KeyboardEvent) => {
         const numCols = window.innerWidth < 640 ? 2 : window.innerWidth < 768 ? 3 : window.innerWidth < 1024 ? 4 : window.innerWidth < 1280 ? 5 : window.innerWidth < 1536 ? 6 : 8;
         const currentSelection = sortedFiles.findIndex(f => selectedIds.has(f.id));
-        if (currentSelection === -1) return;
+        if (currentSelection === -1 && sortedFiles.length > 0) { // If nothing selected, select the first one
+            e.preventDefault();
+            onSelectionChange(new Set([sortedFiles[0].id]));
+            return;
+        } else if (currentSelection === -1) {
+            return;
+        }
+
 
         let nextIndex = currentSelection;
         switch (e.key) {

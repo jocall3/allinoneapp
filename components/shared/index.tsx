@@ -14,7 +14,8 @@ interface MarkdownRendererProps {
 }
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
-    const [sanitizedHtml, setSanitizedHtml] = useState<string | TrustedHTML>('');
+    // FIX: Remove TrustedHTML type as it's not available and string is sufficient for dangerouslySetInnerHTML.
+    const [sanitizedHtml, setSanitizedHtml] = useState<string>('');
 
     useEffect(() => {
         const parse = async () => {

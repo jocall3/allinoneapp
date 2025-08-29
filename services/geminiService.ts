@@ -4,10 +4,12 @@ import * as db from './database';
 import { readFileContent } from './fileSystemService';
 
 const MODEL_NAME = 'gemini-2.5-flash';
-const API_KEY = process.env.API_KEY;
+// FIX: Use VITE_GEMINI_API_KEY consistent with vite.config.ts and .env.local
+const API_KEY = process.env.VITE_GEMINI_API_KEY; 
 
 if (!API_KEY) {
-  throw new Error("API_KEY environment variable is not set.");
+  // FIX: Updated error message for consistency.
+  throw new Error("VITE_GEMINI_API_KEY environment variable is not set.");
 }
 
 const ai = new GoogleGenAI({ apiKey: API_KEY });
@@ -108,7 +110,11 @@ export async function performSemanticSearch(query: string, rootHandle: FileSyste
                 const handle = await rootHandle.getFileHandle(f.path.split('/').slice(1).join('/'), { create: false });
                 const content = await readFileContent(handle);
                 return { name: f.path, content: content.substring(0, 4000) };
-            } catch { return null; }
+            } // FIX: Catch any errors during readFileContent (e.g., file not existing or permission denied)
+            catch (error) { 
+                console.warn(`Could not read content for semantic search: ${f.path}`, error);
+                return null;
+            }
         })
     );
 
@@ -124,7 +130,9 @@ export async function performSemanticSearch(query: string, rootHandle: FileSyste
             try {
                 const handle = await rootHandle.getFileHandle(file.path.split('/').slice(1).join('/'), { create: false });
                 relevantFileNodes.push({ ...file, handle });
-            } catch {}
+            } catch (error) { // FIX: Catch errors for getFileHandle during semantic search
+                console.warn(`Could not get handle for relevant file ${file.path} after semantic search.`, error);
+            }
         }
     }
     return relevantFileNodes;

@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import type { FileNode, SortOption, SortField } from '../types';
 import FileItem from './FileItem';
@@ -63,8 +62,13 @@ const FileList: React.FC<FileListProps> = ({
         e.preventDefault();
         const currentSelection = sortedFiles.findIndex(f => selectedIds.has(f.id));
         let nextIndex = currentSelection;
-
-        if (e.key === 'ArrowDown') {
+        
+        // FIX: Handle initial selection when navigating with arrow keys in an empty selection.
+        if (currentSelection === -1 && sortedFiles.length > 0) {
+            nextIndex = e.key === 'ArrowDown' ? 0 : sortedFiles.length - 1; // Select first/last if nothing selected
+        } else if (currentSelection === -1) {
+            return; // No files to select
+        } else if (e.key === 'ArrowDown') {
             nextIndex = currentSelection < sortedFiles.length - 1 ? currentSelection + 1 : sortedFiles.length - 1;
         } else if (e.key === 'ArrowUp') {
             nextIndex = currentSelection > 0 ? currentSelection - 1 : 0;

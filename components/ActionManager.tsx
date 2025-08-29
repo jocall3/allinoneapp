@@ -13,11 +13,9 @@ export const ActionManager: React.FC = () => {
         try {
             const zip = new JSZip();
 
-            // Add all source files from the registry
-            for (const [filePath, content] of Object.entries(sourceFiles)) {
-                zip.file(filePath, content);
-            }
-
+            // FIX: Removed loop iterating over 'sourceFiles' as it was not defined, causing a runtime error.
+            // This component will now only download user-generated files.
+            
             // Add all user-generated files
             const generatedFiles = await getAllFiles();
             if (generatedFiles.length > 0) {
@@ -25,12 +23,17 @@ export const ActionManager: React.FC = () => {
                 generatedFiles.forEach(file => {
                     generatedFolder?.file(file.filePath, file.content);
                 });
+            } else {
+                alert("No generated files to download.");
+                setIsLoading(null);
+                return;
             }
             
             const zipBlob = await zip.generateAsync({ type: 'blob' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(zipBlob);
-            link.download = 'devcore-ai-toolkit-source.zip';
+            // FIX: Updated download filename to accurately reflect its contents.
+            link.download = 'devcore-ai-toolkit-generated-files.zip';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -48,8 +51,9 @@ export const ActionManager: React.FC = () => {
                 onClick={handleDownloadSource}
                 disabled={!!isLoading}
                 className="w-14 h-14 bg-primary text-text-on-primary rounded-full flex items-center justify-center shadow-lg hover:opacity-90 transition-colors disabled:bg-slate-600"
-                aria-label="Download App Source Code & Generated Files"
-                title="Download App Source Code & Generated Files"
+                // FIX: Updated aria-label and title to match the new functionality.
+                aria-label="Download Generated Files"
+                title="Download Generated Files"
             >
                 {isLoading === 'zip' ? <LoadingSpinner /> : <ArrowDownTrayIcon />}
             </button>

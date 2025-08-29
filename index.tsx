@@ -1,8 +1,13 @@
-
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+*/
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
-import { AppProvider } from './contexts/GlobalStateContext';
+// FIX: Changed to a named import because App.tsx does not provide a default export.
+import { App } from './App.tsx';
+// This import is now correct, assuming GlobalStateProvider is exported from this path
+import { GlobalStateProvider } from './contexts/GlobalStateContext.tsx';
 import './index.css';
 
 const rootElement = document.getElementById('root');
@@ -13,8 +18,8 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <AppProvider>
+    <GlobalStateProvider>
       <App />
-    </AppProvider>
+    </GlobalStateProvider>
   </React.StrictMode>
 );

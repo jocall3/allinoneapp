@@ -24,7 +24,14 @@ import {
     TerminalIcon,
     MoonIcon,
     Cog6ToothIcon,
-    BookOpenIcon
+    BookOpenIcon,
+    // FIX: Add new icons for the 50 new features
+    BuildingStorefrontIcon,
+    CloudArrowUpIcon,
+    MicroscopeIcon,
+    NewspaperIcon,
+    AcademicCapIcon,
+    PresentationChartBarIcon
 } from './components/icons.tsx';
 
 // FIX: Add APP_TITLE export for AiStoryScaffolding feature
@@ -47,7 +54,13 @@ export const FEATURE_CATEGORIES = [
     'Advanced File System Operations',
     'Collaborative & Sharing',
     'Advanced Generative Capabilities',
-    'Ethical AI & User Control'
+    'Ethical AI & User Control',
+    // FIX: Added 5 new categories for the new features.
+    'Enterprise & DevOps',
+    'Advanced Code & Architecture',
+    'Business & Product',
+    'Content & Creative',
+    'Data Science & Analysis',
 ] as const;
 
 export type FeatureCategory = typeof FEATURE_CATEGORIES[number];
@@ -296,6 +309,68 @@ export const RAW_FEATURES: RawFeature[] = [
     { id: "ai-driven-digital-wellbeing-monitoring", name: "AI Digital Wellbeing Monitoring", description: "AI monitors user interaction patterns and suggests breaks or alternative activities.", icon: React.createElement(EyeIcon), category: "Ethical AI & User Control" },
     { id: "automated-ai-model-explainability-reports", name: "AI Model Explainability Reports", description: "AI generates reports explaining the internal workings of its models.", icon: React.createElement(CodeExplainerIcon), category: "Ethical AI & User Control" },
     { id: "ai-powered-ethical-dilemma-simulator", name: "AI Ethical Dilemma Simulator", description: "AI can simulate ethical dilemmas related to its own use cases.", icon: React.createElement(BugAntIcon), category: "Ethical AI & User Control" },
+    
+    // FIX: Add 50 new features
+    // Enterprise & DevOps
+    { id: "ai-incident-post-mortem-generator", name: "AI Incident Post-mortem Generator", description: "Input incident details, get a blame-free post-mortem.", icon: React.createElement(DocumentTextIcon), category: "Enterprise & DevOps" },
+    { id: "terraform-iac-generator", name: "Terraform/IaC Generator", description: "Describe infrastructure, get HCL code.", icon: React.createElement(CloudArrowUpIcon), category: "Enterprise & DevOps" },
+    { id: "ci-cd-pipeline-optimizer", name: "CI/CD Pipeline Optimizer", description: "Paste a CI/CD config, visualize it, and get optimization suggestions.", icon: React.createElement(CloudArrowUpIcon), category: "Enterprise & DevOps" },
+    { id: "k8s-manifest-generator", name: "K8s Manifest Generator", description: "Describe a service, get Kubernetes YAML.", icon: React.createElement(CloudArrowUpIcon), category: "Enterprise & DevOps" },
+    { id: "cloud-architecture-diagram-generator", name: "Cloud Architecture Diagram Generator", description: "Describe architecture, get Mermaid.js diagram for cloud services.", icon: React.createElement(CloudArrowUpIcon), category: "Enterprise & DevOps" },
+    { id: "log-anomaly-detection", name: "Log Anomaly Detection", description: "Paste log files, AI identifies unusual patterns.", icon: React.createElement(BugAntIcon), category: "Enterprise & DevOps" },
+    { id: "slo-calculator-reporter", name: "SLA/SLO Calculator & Reporter", description: "Input metrics, generate SLO reports.", icon: React.createElement(ChartBarIcon), category: "Enterprise & DevOps" },
+    { id: "on-call-schedule-generator", name: "On-Call Schedule Generator", description: "Input team constraints, generate a fair on-call rotation.", icon: React.createElement(BellIcon), category: "Enterprise & DevOps" },
+    { id: "disaster-recovery-plan-generator", name: "Disaster Recovery Plan Generator", description: "Describe system, AI drafts a DR plan.", icon: React.createElement(ShieldCheckIcon), category: "Enterprise & DevOps" },
+    { id: "cloud-cost-anomaly-detection", name: "Cloud Cost Anomaly Detection", description: "Paste billing data, find unexpected cost spikes.", icon: React.createElement(ChartBarIcon), category: "Enterprise & DevOps" },
+
+    // Advanced Code & Architecture
+    { id: "microservice-decomposer", name: "Microservice Decomposer", description: "Paste a monolith's code, AI suggests how to break it into microservices.", icon: React.createElement(RectangleGroupIcon), category: "Advanced Code & Architecture" },
+    { id: "api-contract-tester", name: "API Contract Tester", description: "Provide two API specs, AI checks for breaking changes.", icon: React.createElement(CodeDiffGhostIcon), category: "Advanced Code & Architecture" },
+    { id: "code-to-architectural-pattern-identifier", name: "Architectural Pattern Identifier", description: "Analyze code, identify patterns like Singleton, Factory, etc.", icon: React.createElement(RectangleGroupIcon), category: "Advanced Code & Architecture" },
+    { id: "system-design-interview-simulator", name: "System Design Interview Simulator", description: "Get a system design prompt and interact with an AI interviewer.", icon: React.createElement(AcademicCapIcon), category: "Advanced Code & Architecture" },
+    { id: "code-smell-refactorer", name: "Code Smell Refactorer", description: "Automatically refactors common code smells (long methods, large classes).", icon: React.createElement(SparklesIcon), category: "Advanced Code & Architecture" },
+    { id: "legacy-code-modernizer", name: "Legacy Code Modernizer", description: "Advanced version of migrator for specific patterns (e.g., jQuery to React).", icon: React.createElement(CodeMigratorIcon), category: "Advanced Code & Architecture" },
+    { id: "graphql-schema-generator", name: "GraphQL Schema Generator", description: "Describe data entities, get a GraphQL schema.", icon: React.createElement(SchemaDesignerIcon), category: "Advanced Code & Architecture" },
+    { id: "ai-powered-ast-code-search", name: "AST-Based Code Search", description: "Search code by structure, not just text (e.g., 'find all fetch calls').", icon: React.createElement(MagnifyingGlassIcon), category: "Advanced Code & Architecture" },
+    { id: "event-storming-assistant", name: "Event Storming Assistant", description: "Describe a business process, AI suggests domain events, commands, and aggregates.", icon: React.createElement(LogicFlowBuilderIcon), category: "Advanced Code & Architecture" },
+    { id: "e2e-test-script-generator", name: "E2E Test Script Generator", description: "Describe a user flow, AI generates Playwright/Cypress code.", icon: React.createElement(UnitTestGeneratorIcon), category: "Advanced Code & Architecture" },
+
+    // Business & Product
+    { id: "competitive-analysis-generator", name: "Competitive Analysis Generator", description: "Input competitor URLs, get an AI-generated analysis.", icon: React.createElement(BuildingStorefrontIcon), category: "Business & Product" },
+    { id: "user-persona-generator", name: "User Persona Generator", description: "Describe a target audience, AI creates detailed user personas.", icon: React.createElement(BuildingStorefrontIcon), category: "Business & Product" },
+    { id: "ab-test-hypothesis-generator", name: "A/B Test Hypothesis Generator", description: "Input a feature, AI suggests A/B test ideas.", icon: React.createElement(BeakerIcon), category: "Business & Product" },
+    { id: "product-roadmap-generator", name: "Product Roadmap Generator", description: "Input goals and features, AI creates a visual roadmap.", icon: React.createElement(MapIcon), category: "Business & Product" },
+    { id: "swot-analysis-generator", name: "SWOT Analysis Generator", description: "Describe a product, AI generates a SWOT analysis.", icon: React.createElement(ChartBarIcon), category: "Business & Product" },
+    { id: "press-release-writer", name: "Press Release Writer", description: "Input launch details, AI writes a professional press release.", icon: React.createElement(NewspaperIcon), category: "Business & Product" },
+    // FIX: Replaced PresentationIcon with PresentationChartBarIcon to resolve a reference error.
+    { id: "investor-pitch-deck-outline", name: "Investor Pitch Deck Outline", description: "Input a business idea, AI creates a pitch deck structure.", icon: React.createElement(PresentationChartBarIcon), category: "Business & Product" },
+    { id: "market-sizing-estimator", name: "Market Sizing Estimator", description: "Describe a product, AI provides a rough TAM/SAM/SOM estimation.", icon: React.createElement(ChartBarIcon), category: "Business & Product" },
+    { id: "gtm-strategy-brainstormer", name: "GTM Strategy Brainstormer", description: "Input a product, AI brainstorms go-to-market strategies.", icon: React.createElement(SparklesIcon), category: "Business & Product" },
+    { id: "feature-prioritization-assistant", name: "Feature Prioritization Assistant", description: "Input features with parameters, AI scores and ranks them (RICE/ICE).", icon: React.createElement(ChartBarIcon), category: "Business & Product" },
+
+    // Content & Creative
+    { id: "video-script-writer", name: "Video Script Writer", description: "Describe a topic, AI writes a script for a YouTube video.", icon: React.createElement(VideoCameraIcon), category: "Content & Creative" },
+    { id: "podcast-episode-planner", name: "Podcast Episode Planner", description: "Input a topic, AI outlines segments, talking points, and questions.", icon: React.createElement(MicrophoneIcon), category: "Content & Creative" },
+    { id: "fictional-world-builder", name: "Fictional World Builder", description: "AI assistant for creating cohesive fictional worlds (maps, history, cultures).", icon: React.createElement(MapIcon), category: "Content & Creative" },
+    { id: "game-design-document-drafter", name: "GDD Drafter", description: "Input a game concept, AI drafts a Game Design Document outline.", icon: React.createElement(DocumentTextIcon), category: "Content & Creative" },
+    { id: "ad-copy-generator", name: "Ad Copy Generator", description: "Generate ad copy variations for Google, Facebook, etc.", icon: React.createElement(NewspaperIcon), category: "Content & Creative" },
+    { id: "seo-content-brief-generator", name: "SEO Content Brief Generator", description: "Input a keyword, AI creates a detailed brief for a writer.", icon: React.createElement(DocumentTextIcon), category: "Content & Creative" },
+    { id: "brand-voice-tone-analyzer", name: "Brand Voice & Tone Analyzer", description: "Paste text, AI analyzes its voice and tone.", icon: React.createElement(SparklesIcon), category: "Content & Creative" },
+    { id: "legal-document-summarizer", name: "Legal Document Summarizer", description: "Simplify complex legal text (e.g., Privacy Policy).", icon: React.createElement(DocumentTextIcon), category: "Content & Creative" },
+    { id: "resume-cover-letter-builder", name: "Resume & Cover Letter Builder", description: "Input experience, AI crafts a resume and tailored cover letter.", icon: React.createElement(DocumentTextIcon), category: "Content & Creative" },
+    { id: "speech-writer", name: "Speech Writer", description: "Input a topic and occasion, AI writes a compelling speech.", icon: React.createElement(MicrophoneIcon), category: "Content & Creative" },
+
+    // Data Science & Analysis
+    { id: "jupyter-notebook-auto-documenter", name: "Jupyter Notebook Auto-Documenter", description: "AI adds markdown explanations to a Jupyter notebook.", icon: React.createElement(MicroscopeIcon), category: "Data Science & Analysis" },
+    { id: "sql-optimizer", name: "SQL Query Optimizer", description: "Paste a slow SQL query, AI suggests optimizations.", icon: React.createElement(ServerStackIcon), category: "Data Science & Analysis" },
+    { id: "data-exploration-assistant", name: "Data Exploration Assistant (Pandas)", description: "Describe a dataframe, AI suggests Pandas operations to perform.", icon: React.createElement(MicroscopeIcon), category: "Data Science & Analysis" },
+    { id: "statistical-model-suggester", name: "Statistical Model Suggester", description: "Describe a dataset and goal, AI suggests appropriate statistical models.", icon: React.createElement(BeakerIcon), category: "Data Science & Analysis" },
+    { id: "sentiment-trend-analysis", name: "Sentiment Trend Analysis", description: "Input time-series text data, AI analyzes sentiment trends.", icon: React.createElement(ChartBarIcon), category: "Data Science & Analysis" },
+    { id: "data-cleaning-script-generator", name: "Data Cleaning Script Generator", description: "Describe a messy dataset, AI writes a Python script to clean it.", icon: React.createElement(CodeBracketSquareIcon), category: "Data Science & Analysis" },
+    { id: "feature-engineering-suggester", name: "Feature Engineering Suggester", description: "Describe a machine learning problem, AI suggests potential features to engineer.", icon: React.createElement(SparklesIcon), category: "Data Science & Analysis" },
+    { id: "model-evaluation-report-generator", name: "Model Evaluation Report Generator", description: "Input model metrics, AI writes an evaluation report.", icon: React.createElement(DocumentTextIcon), category: "Data Science & Analysis" },
+    { id: "ai-ethics-statement-drafter", name: "AI Ethics Statement Drafter", description: "Describe an AI project, AI drafts an ethics and transparency statement.", icon: React.createElement(ShieldCheckIcon), category: "Data Science & Analysis" },
+    { id: "synthetic-data-generator", name: "Synthetic Data Generator", description: "Describe a schema, AI generates realistic but fake data for testing.", icon: React.createElement(JsonTreeIcon), category: "Data Science & Analysis" },
 ];
 
 export const ALL_FEATURE_IDS = RAW_FEATURES.map(f => f.id);
