@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { getContextualSuggestions } from '../../services/api';
-import { SparklesIcon } from '../icons';
+import { SparklesIcon } from '../icons.tsx';
 import { LoadingSpinner } from '../shared';
 
 export const ContextAwareCommandSuggestions: React.FC = () => {

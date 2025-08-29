@@ -13,7 +13,7 @@ export const NaturalLanguageWorkflowChaining: React.FC = () => {
             <p className="text-lg text-text-secondary max-w-lg">
                 This feature showcases the future of AI command centers. Instead of single commands, you could chain multiple actions together in one sentence.
             </p>
-            <div className="mt-6 bg-surface border border-border rounded-lg p-4 text-sm text-left space-y-2">
+            <div className="mt-6 bg-surface border border-border rounded-lg p-4 text-sm text-left space-y-2 max-w-lg">
                 <p className="font-semibold">Example Prompt:</p>
                 <p className="text-text-secondary font-mono bg-background p-2 rounded">"Analyze the code in 'utils.js' for performance, generate unit tests for it, and then create a commit message for the new test file."</p>
                 <p className="font-semibold mt-2">AI Execution Plan:</p>
