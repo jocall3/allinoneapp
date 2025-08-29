@@ -7,6 +7,7 @@ import { LeftSidebar } from './components/LeftSidebar';
 import { CommandPalette } from './components/CommandPalette';
 import { VoiceCommandModal } from './components/VoiceCommandModal';
 import { DesktopView } from './components/desktop/DesktopView';
+import { AlchemistEngine } from './alchemy/engine';
 
 // FIX: Added a new WindowState interface to manage the state of each open window in the new desktop environment.
 // FIX: Added optional props to window state to support features launched with initial data.
@@ -32,6 +33,25 @@ export const App: React.FC = () => {
   const [windows, setWindows] = useState<Record<string, WindowState>>({});
   const [activeId, setActiveId] = useState<string | null>(null);
   const [nextZIndex, setNextZIndex] = useState(Z_INDEX_BASE);
+
+  // --- Alchemy Engine Initialization ---
+  useEffect(() => {
+    const initializeAlchemy = async () => {
+        console.log("Initializing Alchemy Engine...");
+        const engine = new AlchemistEngine();
+        try {
+            // For this proof-of-concept, we'll just catalog the first few features
+            // to demonstrate the capability without excessive API calls on startup.
+            const featuresToCatalog = ALL_FEATURES.slice(0, 5); 
+            const catalog = await engine.buildCatalog(featuresToCatalog);
+            console.log("🔥 Alchemy Catalog Generated:", catalog);
+        } catch (error) {
+            console.error("Failed to initialize Alchemy Engine:", error);
+        }
+    };
+    initializeAlchemy();
+  }, []);
+
 
   // FIX: New function to handle launching features in new windows. This replaces the old navigation logic.
   // FIX: Updated to accept optional props for the feature component.
