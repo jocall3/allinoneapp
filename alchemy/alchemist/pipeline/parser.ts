@@ -1,18 +1,59 @@
 /**
  * @fileoverview The Parser for the TSAL language.
- * It takes a sequence of tokens from the Lexer and constructs an Abstract Syntax Tree (AST).
- * This is a simplified implementation to show the architecture.
+ * This implementation uses a Pratt parser (top-down operator precedence parser),
+ * which is excellent for handling expressions with different precedence levels.
+ * It takes tokens from the Lexer and constructs an Abstract Syntax Tree (AST).
  */
 
 import { Token, TokenType } from './lexer';
 import * as AST from '../../tsal/syntax/ast';
 
+type PrefixParselet = (token: Token) => AST.ExpressionNode;
+type InfixParselet = (left: AST.ExpressionNode, token: Token) => AST.ExpressionNode;
+
+enum Precedence {
+    LOWEST,
+    SUM,     // + -
+    PRODUCT, // * /
+    CALL,    // myFunc()
+}
+
+const PRECEDENCES: Partial<Record<TokenType, Precedence>> = {
+    [TokenType.Plus]: Precedence.SUM,
+    [TokenType.Minus]: Precedence.SUM,
+    [TokenType.Star]: Precedence.PRODUCT,
+    [TokenType.Slash]: Precedence.PRODUCT,
+    [TokenType.OpenParen]: Precedence.CALL,
+};
+
 export class Parser {
     private tokens: Token[];
     private position: number = 0;
+    private prefixParselets: Map<TokenType, PrefixParselet> = new Map();
+    private infixParselets: Map<TokenType, InfixParselet> = new Map();
 
     constructor(tokens: Token[]) {
         this.tokens = tokens;
+        this.registerParselets();
+    }
+
+    private registerParselets() {
+        // Register prefix parselets for literals and identifiers
+        this.prefixParselets.set(TokenType.Identifier, this.parseIdentifier.bind(this));
+        this.prefixParselets.set(TokenType.IntegerLiteral, this.parseIntegerLiteral.bind(this));
+        
+        // Register infix parselets for binary operators
+        this.registerInfix(TokenType.Plus, Precedence.SUM);
+        this.registerInfix(TokenType.Minus, Precedence.SUM);
+        this.registerInfix(TokenType.Star, Precedence.PRODUCT);
+        this.registerInfix(TokenType.Slash, Precedence.PRODUCT);
+    }
+
+    private registerInfix(type: TokenType, precedence: Precedence) {
+        this.infixParselets.set(type, (left, token) => {
+            const right = this.parseExpression(precedence);
+            return { type: 'BinaryExpression', operator: token.value, left, right };
+        });
     }
 
     public parse(): AST.ProgramNode {
@@ -22,36 +63,62 @@ export class Parser {
         };
 
         while (!this.isAtEnd()) {
-            // In a real parser, we would parse top-level statements here,
-            // like function declarations, imports, etc.
-            // For this stub, we'll just log the tokens to show the flow.
-            console.log(`[Parser STUB] Processing token:`, this.currentToken());
-            this.advance();
+            // For now, assume all we have are simple expressions for testing
+            // A full implementation would have a `parseStatement` or `parseDeclaration` here.
+            // This is just a placeholder to consume tokens.
+             this.advance();
         }
 
-        console.log("[Parser STUB] Finished parsing. A real parser would return a complete AST here.");
+        console.log("[Parser] Finished parsing. A full implementation would build a complete AST for declarations and statements.");
         return programNode;
     }
 
+    public parseExpression(precedence: Precedence = Precedence.LOWEST): AST.ExpressionNode {
+        const token = this.advance();
+        const prefix = this.prefixParselets.get(token.type);
+
+        if (!prefix) {
+            throw new Error(`Parser Error: No prefix parselet found for token type ${token.type}`);
+        }
+
+        let left = prefix(token);
+
+        while (precedence < this.getPrecedence()) {
+            const infixToken = this.advance();
+            const infix = this.infixParselets.get(infixToken.type);
+            if (!infix) {
+                throw new Error(`Parser Error: No infix parselet found for token type ${infixToken.type}`);
+            }
+            left = infix(left, infixToken);
+        }
+
+        return left;
+    }
+    
+    private parseIdentifier(token: Token): AST.IdentifierNode {
+        return { type: 'Identifier', name: token.value };
+    }
+
+    private parseIntegerLiteral(token: Token): AST.LiteralNode {
+        return { type: 'Literal', value: parseInt(token.value, 10) };
+    }
+
+    private getPrecedence(): Precedence {
+        const token = this.currentToken();
+        return PRECEDENCES[token.type] || Precedence.LOWEST;
+    }
+    
     private currentToken(): Token {
         return this.tokens[this.position];
     }
 
     private advance(): Token {
+        const token = this.currentToken();
         if (!this.isAtEnd()) this.position++;
-        return this.previousToken();
-    }
-
-    private previousToken(): Token {
-        return this.tokens[this.position - 1];
+        return token;
     }
 
     private isAtEnd(): boolean {
         return this.currentToken().type === TokenType.EOF;
     }
-    
-    // In a real implementation, you would have methods like these:
-    // private parseFunctionDeclaration(): AST.FunctionDeclarationNode { ... }
-    // private parseStatement(): AST.StatementNode { ... }
-    // private parseExpression(): AST.ExpressionNode { ... }
 }

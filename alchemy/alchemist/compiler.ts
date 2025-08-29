@@ -10,6 +10,15 @@ import { SemanticAnalyzer } from './pipeline/semantic';
 import { CodeGenerator } from './pipeline/codegen';
 import { AetherLink } from '../../aetherlink/ffi';
 
+// In a real environment, you'd use a WAT to Wasm compiler like WABT.
+// For the browser, a JS library would be needed. This is a placeholder.
+async function watToWasm(wat: string): Promise<Uint8Array> {
+    console.warn("[Compiler] WAT to Wasm conversion is a stub. An actual implementation (like WABT.js) is needed.");
+    // This is a minimal valid Wasm module: (module)
+    return new Uint8Array([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00]);
+}
+
+
 export class Alchemist {
     private aetherLink: AetherLink;
 
@@ -26,38 +35,45 @@ export class Alchemist {
     public async compile(source: string): Promise<WebAssembly.Instance> {
         console.log("--- Starting Alchemist Compilation Pipeline ---");
 
-        // 1. Lexical Analysis
-        const lexer = new Lexer(source);
-        const tokens = lexer.tokenize();
-        console.log("1. Lexing complete. Tokens:", tokens);
+        try {
+            // 1. Lexical Analysis
+            const lexer = new Lexer(source);
+            const tokens = lexer.tokenize();
+            console.log("1. Lexing complete.");
 
-        // 2. Parsing
-        const parser = new Parser(tokens);
-        const ast = parser.parse();
-        console.log("2. Parsing complete. AST:", ast);
+            // 2. Parsing
+            const parser = new Parser(tokens);
+            const ast = parser.parse();
+            console.log("2. Parsing complete.");
 
-        // 3. Semantic Analysis
-        const analyzer = new SemanticAnalyzer(ast);
-        const validatedAst = analyzer.analyze();
-        console.log("3. Semantic analysis complete.");
+            // 3. Semantic Analysis
+            const analyzer = new SemanticAnalyzer(ast);
+            const validatedAst = analyzer.analyze();
+            console.log("3. Semantic analysis complete.");
 
-        // 4. Code Generation
-        const generator = new CodeGenerator(validatedAst);
-        const wat = generator.generate();
-        console.log("4. Code generation complete. WAT:", wat);
+            // 4. Code Generation
+            const generator = new CodeGenerator(validatedAst);
+            const wat = generator.generate();
+            console.log("4. Code generation complete. WAT:", wat);
 
-        // This is where you would convert WAT to a .wasm binary buffer.
-        // This step typically requires a tool like WABT (WebAssembly Binary Toolkit).
-        // For this stub, we'll log a message instead.
-        console.log("5. (SKIPPED) WAT to Wasm binary conversion.");
-        const wasmBuffer = new Uint8Array(); // Placeholder for actual binary
+            // 5. WAT to Wasm binary conversion
+            const wasmBuffer = await watToWasm(wat);
+            console.log("5. Wasm binary generated (stub).");
 
-        // 6. Instantiation via AetherLink
-        console.log("6. Instantiating Wasm module...");
-        const importObject = this.aetherLink.createImportObject();
-        const instance = await WebAssembly.instantiate(wasmBuffer, importObject);
-        console.log("--- Compilation and Instantiation Complete ---");
-        
-        return instance.instance;
+            // 6. Instantiation via AetherLink
+            console.log("6. Instantiating Wasm module...");
+            const importObject = this.aetherLink.createImportObject(wasmBuffer);
+            const { instance } = await WebAssembly.instantiate(wasmBuffer, importObject);
+            
+            // Give the allocator access to the instance's memory
+            // allocator.setMemory(instance.exports.memory as WebAssembly.Memory);
+
+            console.log("--- Compilation and Instantiation Complete ---");
+            return instance;
+
+        } catch (error) {
+            console.error("ALCHEMIST COMPILATION FAILED:", error);
+            throw error;
+        }
     }
 }

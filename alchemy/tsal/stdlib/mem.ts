@@ -1,49 +1,86 @@
 /**
- * @fileoverview Stub implementation of the TSAL standard library for memory management.
- * In a real compiler, these functions would be intrinsics that map to direct
- * Wasm memory instructions or calls to a bundled memory allocator like `wee_alloc`.
+ * @fileoverview A functional, simplified memory manager for the TSAL runtime.
+ * This provides a concrete implementation of a bump allocator for the `heap` module.
+ * In a real, production compiler, this might be replaced with a more complex allocator
+ * like `wee_alloc`, but this provides a functional starting point.
  */
 
 import type { mem_ptr } from '../syntax/types';
 
-/**
- * Provides functions for interacting with the Wasm module's private linear memory heap.
- */
-export const heap = {
+class BumpAllocator {
+    private memory: WebAssembly.Memory;
+    private heap_start: number;
+    private current_ptr: number;
+
+    constructor() {
+        // Initialize with a default of 1 page (64KiB) if not provided.
+        this.memory = new WebAssembly.Memory({ initial: 1 });
+        // Reserve some space at the beginning for null, etc.
+        this.heap_start = 16; 
+        this.current_ptr = this.heap_start;
+        console.log(`[TSAL Runtime] BumpAllocator initialized with ${this.memory.buffer.byteLength} bytes.`);
+    }
+
+    public setMemory(memory: WebAssembly.Memory) {
+        this.memory = memory;
+        console.log(`[TSAL Runtime] BumpAllocator attached to new memory instance.`);
+    }
+
     /**
-     * Allocates a block of memory of the given size.
+     * Allocates a block of memory of the given size with 8-byte alignment.
      * @param size The number of bytes to allocate.
      * @returns A memory pointer to the start of the allocated block, or 0 if allocation fails.
      */
-    alloc(size: number): mem_ptr {
-        console.log(`[TSAL STUB] heap.alloc(${size})`);
-        // In a real implementation, this would call the allocator.
-        // Returning a non-zero dummy pointer.
-        return 1024; 
-    },
+    public alloc(size: number): mem_ptr {
+        // 8-byte alignment
+        const alignedSize = (size + 7) & ~7;
+        const next_ptr = this.current_ptr + alignedSize;
+        
+        if (next_ptr > this.memory.buffer.byteLength) {
+            const neededPages = Math.ceil((next_ptr - this.memory.buffer.byteLength) / (64 * 1024));
+            try {
+                this.memory.grow(neededPages);
+            } catch (e) {
+                console.error("[TSAL Runtime] Out of memory! Failed to grow memory.", e);
+                return 0; // Allocation failed
+            }
+        }
+
+        const ptr = this.current_ptr;
+        this.current_ptr = next_ptr;
+        return ptr;
+    }
 
     /**
      * Frees a previously allocated block of memory.
-     * @param ptr The memory pointer to free.
+     * NOTE: A simple bump allocator cannot free individual blocks.
+     * Freeing requires resetting the entire heap.
      */
-    free(ptr: mem_ptr): void {
-        console.log(`[TSAL STUB] heap.free(${ptr})`);
-        // In a real implementation, this would call the allocator's free function.
+    public free(ptr: mem_ptr): void {
+        // A simple bump allocator doesn't support individual frees.
+        // This is a no-op. For a real system, you'd use a more complex allocator.
     }
+
+    /**
+     * Resets the entire heap, effectively freeing all allocated memory.
+     */
+    public reset(): void {
+        this.current_ptr = this.heap_start;
+        console.log("[TSAL Runtime] BumpAllocator heap has been reset.");
+    }
+}
+
+export const allocator = new BumpAllocator();
+
+export const heap = {
+    alloc: (size: number): mem_ptr => allocator.alloc(size),
+    free: (ptr: mem_ptr): void => allocator.free(ptr),
 };
 
-/**
- * Provides functions for interacting with shared memory for multi-threading.
- */
 export const shared_mem = {
-    /**
-     * Creates a shared memory buffer accessible by multiple Wasm threads.
-     * @param size The size of the buffer in elements (not bytes).
-     * @returns An opaque handle to the shared buffer.
-     */
     create_buffer<T>(size: number): any {
+        // In a real implementation, this would use SharedArrayBuffer
         console.log(`[TSAL STUB] shared_mem.create_buffer(${size})`);
-        // This would interact with SharedArrayBuffer on the JS side.
         return { bufferId: 1 };
     }
 };
