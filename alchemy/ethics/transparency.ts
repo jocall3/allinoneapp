@@ -73,7 +73,7 @@ export class TransparencyLog {
                 return false;
             }
         }
-        console.log("[TransparencyLog] Chain integrity verified successfully.");
+        console.log("[TrannsparencyLog] Chain integrity verified successfully.");
         return true;
     }
 
