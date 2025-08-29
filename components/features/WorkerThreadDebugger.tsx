@@ -1,8 +1,11 @@
+
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { BugAntIcon, ArrowDownTrayIcon } from '../icons.tsx';
-import { analyzeConcurrencyStream } from '../../services/geminiService.ts';
+// FIX: Import from index.ts where all services are exported
+import { analyzeConcurrencyStream } from '../../services/index.ts';
 import { LoadingSpinner, MarkdownRenderer } from '../shared/index.tsx';
-import { downloadFile } from '../../services/fileUtils.ts';
+import { downloadFile } from '../../services/index.ts';
 
 const exampleCode = `// main.js
 const worker = new Worker('worker.js');

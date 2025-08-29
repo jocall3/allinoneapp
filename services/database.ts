@@ -16,31 +16,47 @@ const initDB = () => {
     upgrade(db) {
       if (!db.objectStoreNames.contains(FILE_STORE_NAME)) {
         const store = db.createObjectStore(FILE_STORE_NAME, {
-          keyPath: 'path', // Use full path as the unique key
+          keyPath: 'path',
         });
         store.createIndex('parentId', 'parentId', { unique: false });
-        store.createIndex('cid', 'cid', { unique: false });
       }
     },
   });
   return dbPromise;
 };
 
-export async function addFile(fileNode: FileNode) {
+export async function addFile(fileNode: StorableFileNode) {
   const db = await initDB();
-  // We need to store a serializable version of the FileNode, so we omit the handle
-  const { handle, content, ...storableFileNode } = fileNode;
-  await db.put(FILE_STORE_NAME, storableFileNode);
+  await db.put(FILE_STORE_NAME, fileNode);
 }
 
-
-export async function getFilesForDirectory(parentId: string | null): Promise<StorableFileNode[]> {
+export async function getFilesForDirectory(directoryPath: string): Promise<StorableFileNode[]> {
   const db = await initDB();
-  const tx = db.transaction(FILE_STORE_NAME, 'readonly');
-  const index = tx.store.index('parentId');
-  const files = await index.getAll(parentId);
-  await tx.done;
-  return files;
+  const index = db.transaction(FILE_STORE_NAME).store.index('parentId');
+  return index.getAll(directoryPath);
+}
+
+export async function getFilesForDirectoryWithHandles(directoryHandle: FileSystemDirectoryHandle, directoryPath: string): Promise<FileNode[]> {
+    const storableFiles = await getFilesForDirectory(directoryPath);
+    const liveFiles: FileNode[] = [];
+
+    for (const file of storableFiles) {
+        try {
+            const handle = file.isDirectory 
+                ? await directoryHandle.getDirectoryHandle(file.name)
+                : await directoryHandle.getFileHandle(file.name);
+            liveFiles.push({ ...file, handle });
+        } catch (e) {
+            console.warn(`Could not get handle for ${file.path}. It may have been moved or deleted.`, e);
+            await deleteFileNode(file.path);
+        }
+    }
+    return liveFiles;
+}
+
+export async function getAllFilesFromDB(): Promise<StorableFileNode[]> {
+    const db = await initDB();
+    return db.getAll(FILE_STORE_NAME);
 }
 
 export async function clearAllFiles() {
@@ -56,19 +72,18 @@ export async function deleteFileNode(path: string) {
 export async function getDescendants(path: string): Promise<StorableFileNode[]> {
     const db = await initDB();
     const allFiles = await db.getAll(FILE_STORE_NAME);
-    // Find all files that are children of the given path
     return allFiles.filter(f => f.path.startsWith(`${path}/`));
 }
 
-export async function deleteDescendants(path: string): Promise<void> {
+export async function deleteDescendantsAndSelf(path: string): Promise<void> {
     const db = await initDB();
     const tx = db.transaction(FILE_STORE_NAME, 'readwrite');
-    const store = tx.objectStore(FILE_STORE_NAME);
+    const store = tx.store;
     const descendants = await getDescendants(path);
-
+    
     await Promise.all([
         ...descendants.map(d => store.delete(d.path)),
-        store.delete(path), // Also delete the directory itself
+        store.delete(path),
     ]);
     
     await tx.done;
@@ -77,41 +92,37 @@ export async function deleteDescendants(path: string): Promise<void> {
 export async function updatePath(oldPath: string, newPath: string) {
     const db = await initDB();
     const tx = db.transaction(FILE_STORE_NAME, 'readwrite');
-    const store = tx.objectStore(FILE_STORE_NAME);
+    const store = tx.store;
 
-    const originalNode: StorableFileNode | undefined = await store.get(oldPath);
-    if (!originalNode) {
-        console.error(`Node not found in DB for path: ${oldPath}`);
-        await tx.done;
-        return;
-    }
+    const originalNode = await store.get(oldPath);
+    if (!originalNode) return;
 
     const descendants = originalNode.isDirectory ? await getDescendants(oldPath) : [];
     
-    // Prepare all nodes that need to be deleted
-    const pathsToDelete = [oldPath, ...descendants.map(d => d.path)];
-    
-    // Prepare all nodes that need to be added
-    const newParentPath = newPath.substring(0, newPath.lastIndexOf('/'));
+    const nodesToAdd = [];
+    const newParentPath = newPath.substring(0, newPath.lastIndexOf('/')) || newPath.substring(0, newPath.lastIndexOf('\\')) || null;
     
     const updatedOriginalNode: StorableFileNode = {
         ...originalNode,
         path: newPath,
-        name: newPath.substring(newPath.lastIndexOf('/') + 1),
+        name: newPath.split(/[\\/]/).pop()!,
         parentId: newParentPath,
     };
+    nodesToAdd.push(updatedOriginalNode);
     
-    const updatedDescendants = descendants.map(d => ({
-        ...d,
-        path: d.path.replace(oldPath, newPath),
-        parentId: d.parentId?.replace(oldPath, newPath),
-    }));
+    for (const d of descendants) {
+        nodesToAdd.push({
+            ...d,
+            path: d.path.replace(oldPath, newPath),
+            parentId: d.parentId?.replace(oldPath, newPath),
+        });
+    }
 
-    const nodesToAdd = [updatedOriginalNode, ...updatedDescendants];
-
-    // Execute all operations within the same transaction
-    await Promise.all(pathsToDelete.map(p => store.delete(p)));
+    await Promise.all([
+        store.delete(oldPath),
+        ...descendants.map(d => store.delete(d.path))
+    ]);
     await Promise.all(nodesToAdd.map(n => store.put(n)));
-    
+
     await tx.done;
 }

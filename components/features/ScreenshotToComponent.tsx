@@ -1,8 +1,11 @@
+
+
 import React, { useState, useCallback, useRef } from 'react';
-import { generateComponentFromImageStream } from '../../services/geminiService.ts';
+// FIX: Import from index.ts where all services are exported
+import { generateComponentFromImageStream } from '../../services/index.ts';
 import { PhotoIcon, ArrowDownTrayIcon } from '../icons.tsx';
 import { LoadingSpinner, MarkdownRenderer } from '../shared/index.tsx';
-import { fileToBase64, blobToDataURL, downloadFile } from '../../services/fileUtils.ts';
+import { fileToBase64, blobToDataURL, downloadFile } from '../../services/index.ts';
 
 export const ScreenshotToComponent: React.FC = () => {
     const [previewImage, setPreviewImage] = useState<string | null>(null);

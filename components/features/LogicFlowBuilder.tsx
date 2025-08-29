@@ -1,6 +1,7 @@
 
 import React, { useState, useCallback, useRef } from 'react';
 import { ALL_FEATURES } from './index.ts';
+// FIX: Import FEATURE_TAXONOMY from services/index.ts where it is now exported.
 import { FEATURE_TAXONOMY, generatePipelineCode } from '../../services/index.ts';
 import { featureToFunctionMap } from '../../services/pipelineTools.ts';
 import type { Feature } from '../../types.ts';
@@ -69,8 +70,12 @@ export const LogicFlowBuilder: React.FC = () => {
 
         const flowDescription = pipeline.map((node, index) => {
             const featureInfo = taxonomyMap.get(node.featureId);
+            // FIX: Added a check for featureInfo to prevent runtime errors and fix TypeScript error
+            if (!featureInfo) {
+                return `Step ${index + 1}: Unknown tool with ID ${node.featureId}`;
+            }
             const functionName = featureToFunctionMap[node.featureId] || 'unknownTool';
-            return `Step ${index + 1}: Execute the '${featureInfo?.name}' tool (function: ${functionName}). Description: ${featureInfo?.description}. Inputs: ${featureInfo?.inputs}.`;
+            return `Step ${index + 1}: Execute the '${featureInfo.name}' tool (function: ${functionName}). Description: ${featureInfo.description}. Inputs: ${featureInfo.inputs}.`;
         }).join('\n');
 
 

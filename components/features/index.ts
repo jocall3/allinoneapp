@@ -1,7 +1,7 @@
-
 import React from 'react';
 import type { Feature } from '../../types.ts';
 import { RAW_FEATURES } from '../../constants.ts';
+// FIX: Import lazyWithRetry from the main services index file
 import { lazyWithRetry } from '../../services/index.ts';
 
 // Map feature IDs to their components using lazy loading with retry logic
@@ -48,6 +48,8 @@ const componentMap: Record<string, React.FC<any>> = {
     'network-visualizer': lazyWithRetry(() => import('./NetworkVisualizer.tsx'), 'NetworkVisualizer'),
     'responsive-tester': lazyWithRetry(() => import('./ResponsiveTester.tsx'), 'ResponsiveTester'),
     'sass-scss-compiler': lazyWithRetry(() => import('./SassScssCompiler.tsx'), 'SassScssCompiler'),
+    'ai-story-scaffolding': lazyWithRetry(() => import('./AiStoryScaffolding.tsx'), 'AiStoryScaffolding'),
+    'omnistruct-framework': lazyWithRetry(() => import('./OmniStructFramework.tsx'), 'OmniStructFramework'),
 };
 
 // Map feature IDs to specific AI configurations
@@ -74,6 +76,8 @@ const aiConfigMap: Record<string, Feature['aiConfig']> = {
     'xbrl-converter': { model: 'gemini-2.5-flash' },
     'digital-whiteboard': { model: 'gemini-2.5-flash' },
     'project-explorer': { model: 'gemini-2.5-flash' },
+    'ai-story-scaffolding': { model: 'gemini-2.5-flash' }, // Add config for the new feature
+    'omnistruct-framework': { model: 'gemini-2.5-flash' },
 };
 
 export const ALL_FEATURES: Feature[] = RAW_FEATURES.map(feature => ({

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   File,
@@ -31,6 +30,7 @@ import {
   Save,
   BrainCircuit,
   MessageSquareQuote,
+  LayoutDashboard,
 } from 'lucide-react';
 
 export const iconMap = {
@@ -64,6 +64,7 @@ export const iconMap = {
   save: Save,
   brain: BrainCircuit,
   summary: MessageSquareQuote,
+  dashboard: LayoutDashboard,
 };
 
 type IconName = keyof typeof iconMap;

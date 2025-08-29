@@ -14,7 +14,6 @@ export const useContextMenu = (triggerRef: RefObject<HTMLElement>, menuRef: RefO
       const screenWidth = window.innerWidth;
       const screenHeight = window.innerHeight;
       
-      // Use setTimeout to allow the menu to render and get its dimensions
       setTimeout(() => {
         if (menuRef.current) {
           const menuWidth = menuRef.current.offsetWidth;
@@ -30,21 +29,25 @@ export const useContextMenu = (triggerRef: RefObject<HTMLElement>, menuRef: RefO
   }, [triggerRef, menuRef]);
 
   const handleClickOutside = useCallback((event: MouseEvent) => {
-    // Close if clicking outside the menu
     if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
       setVisible(false);
     }
   }, [menuRef]);
 
   useEffect(() => {
-    document.addEventListener('contextmenu', handleContextMenu);
+    const triggerEl = triggerRef.current;
+    if (triggerEl) {
+        triggerEl.addEventListener('contextmenu', handleContextMenu);
+    }
     document.addEventListener('mousedown', handleClickOutside);
 
     return () => {
-      document.removeEventListener('contextmenu', handleContextMenu);
+        if (triggerEl) {
+            triggerEl.removeEventListener('contextmenu', handleContextMenu);
+        }
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [handleContextMenu, handleClickOutside]);
+  }, [handleContextMenu, handleClickOutside, triggerRef]);
 
-  return { visible, setVisible, position };
+  return { visible, setVisible, position, ref: triggerRef };
 };

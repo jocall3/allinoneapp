@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ViewType } from '../../types';
 import Icon from '../ui/Icon';
@@ -17,6 +16,8 @@ interface HeaderProps {
   isSearching: boolean;
   onClearSearch: () => void;
   isSearchResults: boolean;
+  onToggleDashboard: () => void;
+  isDashboardVisible: boolean;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -31,6 +32,8 @@ const Header: React.FC<HeaderProps> = ({
   isSearching,
   onClearSearch,
   isSearchResults,
+  onToggleDashboard,
+  isDashboardVisible,
 }) => {
   return (
     <header className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm sticky top-0 z-10 flex-shrink-0 h-14">
@@ -41,6 +44,14 @@ const Header: React.FC<HeaderProps> = ({
       <div className="flex items-center space-x-2 ml-4">
           <SearchBar onSearch={onSearch} isSearching={isSearching} onClear={onClearSearch} isResults={isSearchResults} />
           
+           <button
+            onClick={onToggleDashboard}
+            className={`p-2 rounded-lg transition-colors ${isDashboardVisible ? 'bg-blue-600 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+            title="Toggle Project Dashboard"
+          >
+            <Icon name="dashboard" size={18} />
+          </button>
+
           <button 
               onClick={onExplainFolder}
               className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900 transition-colors"
@@ -61,16 +72,16 @@ const Header: React.FC<HeaderProps> = ({
           </button>
           <div className="flex items-center bg-gray-200 dark:bg-gray-700 rounded-lg p-0.5">
             <button
-                onClick={() => onViewChange(ViewType.LIST)}
-                className={`p-1.5 rounded-md ${viewType === ViewType.LIST ? 'bg-white dark:bg-gray-600 shadow-sm' : 'hover:bg-gray-300/50 dark:hover:bg-gray-600/50'}`}
+                onClick={() => onViewChange('list')}
+                className={`p-1.5 rounded-md ${viewType === 'list' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'hover:bg-gray-300/50 dark:hover:bg-gray-600/50'}`}
                 aria-label="List view"
                 title="List view"
             >
                 <Icon name="list" size={18} />
             </button>
             <button
-                onClick={() => onViewChange(ViewType.GRID)}
-                className={`p-1.5 rounded-md ${viewType === ViewType.GRID ? 'bg-white dark:bg-gray-600 shadow-sm' : 'hover:bg-gray-300/50 dark:hover:bg-gray-600/50'}`}
+                onClick={() => onViewChange('grid')}
+                className={`p-1.5 rounded-md ${viewType === 'grid' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'hover:bg-gray-300/50 dark:hover:bg-gray-600/50'}`}
                 aria-label="Grid view"
                 title="Grid view"
             >

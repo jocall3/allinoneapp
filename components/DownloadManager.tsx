@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import JSZip from 'jszip';
 import { getAllFiles } from '../services/dbService.ts';
-import { ArrowDownTrayIcon } from './icons/InterfaceIcons.tsx';
+import { ArrowDownTrayIcon } from './icons.tsx';
 import { LoadingSpinner } from './shared/LoadingSpinner.tsx';
 
 export const DownloadManager: React.FC = () => {

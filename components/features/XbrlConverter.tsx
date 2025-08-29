@@ -1,5 +1,8 @@
+
+
 import React, { useState, useCallback } from 'react';
-import { convertJsonToXbrlStream } from '../../services/geminiService.ts';
+// FIX: Import from index.ts where all services are exported
+import { convertJsonToXbrlStream } from '../../services/index.ts';
 import { XbrlConverterIcon } from '../icons.tsx';
 import { LoadingSpinner, MarkdownRenderer } from '../shared/index.tsx';
 

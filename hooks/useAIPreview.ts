@@ -5,56 +5,44 @@ import { generatePreview } from '../services/geminiService';
 import { readFileContent } from '../services/fileSystemService';
 
 const isPreviewableFile = (fileName: string) => {
-    const textExtensions = ['.txt', '.md', '.json', '.js', '.ts', '.tsx', '.html', '.css', '.py'];
+    const textExtensions = ['.txt', '.md', '.json', '.js', '.ts', '.tsx', '.html', '.css', '.py', '.rb', '.java', '.c', '.cpp', '.go', '.rs', '.php'];
     return textExtensions.some(ext => fileName.toLowerCase().endsWith(ext));
 };
 
 export const useAIPreview = (file: FileNode, isHovered: boolean) => {
     const [preview, setPreview] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        // FIX: setTimeout in browsers returns a number, not a NodeJS.Timeout
         let timeoutId: number;
         let isCancelled = false;
 
         const fetchPreview = async () => {
-            if (isCancelled || !isPreviewableFile(file.name) || file.isDirectory) {
-                return;
-            }
-
+            if (isCancelled || !isPreviewableFile(file.name) || file.isDirectory || !file.handle) return;
             setIsLoading(true);
             setPreview(null);
-            setError(null);
-
             try {
                 const content = await readFileContent(file.handle as FileSystemFileHandle);
                 if (isCancelled) return;
-                
                 const summary = await generatePreview(file.name, content);
-                 if (isCancelled) return;
-                
-                setPreview(summary);
+                if (!isCancelled) setPreview(summary);
             } catch (e) {
-                 if (isCancelled) return;
-                setError(e instanceof Error ? e.message : 'Failed to get preview');
+                if (!isCancelled) console.error("Preview failed:", e);
             } finally {
-                 if (!isCancelled) setIsLoading(false);
+                if (!isCancelled) setIsLoading(false);
             }
         };
 
         if (isHovered) {
-            timeoutId = window.setTimeout(fetchPreview, 500); // Debounce to avoid spamming API on quick hovers
+            timeoutId = window.setTimeout(fetchPreview, 500);
         }
 
         return () => {
             isCancelled = true;
             clearTimeout(timeoutId);
-            setIsLoading(false);
-            setPreview(null); // Reset on un-hover
+            if(isLoading) setIsLoading(false);
         };
-    }, [file, isHovered]);
+    }, [file, isHovered, isLoading]);
 
-    return { preview, isLoading, error };
+    return { preview, isLoading };
 };

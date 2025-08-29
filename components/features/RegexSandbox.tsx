@@ -1,5 +1,8 @@
+
+
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { generateRegExStream } from '../../services/geminiService.ts';
+// FIX: Import from index.ts where all services are exported
+import { generateRegExStream } from '../../services/index.ts';
 import { BeakerIcon } from '../icons.tsx';
 import { LoadingSpinner } from '../shared/index.tsx';
 

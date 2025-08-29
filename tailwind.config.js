@@ -2,32 +2,31 @@
 export default {
   content: [
     "./index.html",
-    "./**/*.{js,ts,jsx,tsx}",
+    "./*.{js,ts,jsx,tsx}",
+    "./components/**/*.{js,ts,jsx,tsx}",
+    "./contexts/**/*.{js,ts,jsx,tsx}",
+    "./hooks/**/*.{js,ts,jsx,tsx}",
+    "./services/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
-      fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        serif: ['"EB Garamond"', 'serif'],
-        calligraphy: ['"Great Vibes"', 'cursive'],
-      },
-      colors: {
-        'primary': '#0047AB', // Cobalt Blue
-        'background': '#F5F7FA', // Light silver-blue
-        'surface': '#FFFFFF',
-        'text': {
-          'primary': '#111827', // Gray 900
-          'secondary': '#6B7280', // Gray 500
-          'on-primary': '#FFFFFF',
-        },
-        'border': '#E5E7EB', // Gray 200
-        'gold': '#B8860B', // DarkGoldenRod - better for watermark
-      },
-       boxShadow: {
-        'focus-primary': '0 0 0 3px rgba(0, 71, 171, 0.4)',
-        'md': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-      },
+       colors: {
+        gray: {
+          50: '#f9fafb',
+          100: '#f3f4f6',
+          200: '#e5e7eb',
+          300: '#d1d5db',
+          400: '#9ca3af',
+          500: '#6b7280',
+          600: '#4b5563',
+          700: '#374151',
+          800: '#1f2937',
+          900: '#111827',
+        }
+      }
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/typography'),
+  ],
 }

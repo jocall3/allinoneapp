@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { ViewType } from '../types';
 import type { FileNode, SortOption } from '../types';
@@ -76,7 +77,7 @@ const FileView: React.FC<FileViewProps> = ({
 
   return (
     <div className="flex-1 overflow-y-auto p-4" onClick={handleContainerClick}>
-      {viewType === ViewType.LIST ? (
+      {viewType === 'list' ? (
         <FileList {...commonProps} onSortChange={onSortChange} />
       ) : (
         <FileGrid {...commonProps} />

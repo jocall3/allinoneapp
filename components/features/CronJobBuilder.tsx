@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { CommandLineIcon, SparklesIcon } from '../icons.tsx';
-import { generateCronFromDescription, CronParts } from '../../services/index.ts';
+// FIX: Import CronParts type from its definition file instead of the service barrel.
+import { generateCronFromDescription } from '../../services/index.ts';
+import type { CronParts } from '../../types.ts';
 import { LoadingSpinner } from '../shared/index.tsx';
 
 const CronPartSelector: React.FC<{ label: string, value: string, onChange: (value: string) => void, options: (string|number)[] }> = ({ label, value, onChange, options }) => {

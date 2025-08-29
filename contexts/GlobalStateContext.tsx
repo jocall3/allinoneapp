@@ -1,158 +1,204 @@
 
-import React, { createContext, useReducer, useContext, useEffect } from 'react';
-import type { ViewType, User, FileNode, Theme } from '../types.ts';
+import React, { createContext, useReducer, useContext, useEffect, useCallback } from 'react';
+import type { ViewType, FileNode, SortOption, ModalState, User, DashboardData, Repo } from '../types';
+import { ingestDirectory, openDirectoryAndIngest } from '../services/fileSystemService';
 
-// State shape
-interface GlobalState {
-  activeView: ViewType;
-  viewProps: any;
-  theme: Theme;
-  hiddenFeatures: string[];
-  isGithubConnected: boolean;
-  githubToken: string | null;
-  githubUser: User | null,
-  isHuggingFaceConnected: boolean;
-  projectFiles: FileNode | null;
-  selectedRepo: { owner: string; repo: string } | null;
+interface AppState {
+    rootHandle: FileSystemDirectoryHandle | null;
+    currentHandle: FileSystemDirectoryHandle | null;
+    path: { name: string; handle: FileSystemDirectoryHandle }[];
+    files: FileNode[];
+    loading: boolean;
+    error: string | null;
+    viewType: ViewType;
+    sort: SortOption;
+    modal: ModalState | null;
+    isTerminalOpen: boolean;
+    searchResults: FileNode[] | null;
+    githubToken: string | null;
+    githubUser: User | null;
+    isGithubConnected: boolean;
+    isDashboardVisible: boolean;
+    dashboardData: DashboardData | null;
+    isDashboardLoading: boolean;
+    activeView: ViewType;
+    viewProps: any;
+    hiddenFeatures: string[];
+    selectedRepo: { owner: string; repo: string } | null;
+    projectFiles: FileNode | null;
 }
 
-// Action types
 type Action =
-  | { type: 'SET_VIEW'; payload: { view: ViewType, props?: any } }
-  | { type: 'TOGGLE_FEATURE_VISIBILITY'; payload: { featureId: string } }
-  | { type: 'SET_GITHUB_TOKEN'; payload: { token: string | null, user: User | null } }
-  | { type: 'SET_HUGGINGFACE_CONNECTED'; payload: boolean }
-  | { type: 'LOAD_PROJECT_FILES'; payload: FileNode | null }
-  | { type: 'SET_SELECTED_REPO'; payload: { owner: string; repo: string } | null }
-  | { type: 'LOGOUT' };
+    | { type: 'SET_ROOT_HANDLE'; payload: FileSystemDirectoryHandle | null }
+    | { type: 'SET_CURRENT_HANDLE'; payload: { handle: FileSystemDirectoryHandle; path: { name: string; handle: FileSystemDirectoryHandle }[] } }
+    | { type: 'SET_FILES'; payload: FileNode[] }
+    | { type: 'SET_LOADING'; payload: boolean }
+    | { type: 'SET_ERROR'; payload: string | null }
+    | { type: 'SET_VIEW_TYPE'; payload: ViewType }
+    | { type: 'SET_SORT'; payload: SortOption }
+    | { type: 'OPEN_MODAL'; payload: ModalState }
+    | { type: 'CLOSE_MODAL' }
+    | { type: 'TOGGLE_TERMINAL' }
+    | { type: 'SET_SEARCH_RESULTS'; payload: FileNode[] | null }
+    | { type: 'SET_GITHUB_TOKEN'; payload: { token: string | null, user: User | null } }
+    | { type: 'LOGOUT' }
+    | { type: 'TOGGLE_DASHBOARD' }
+    | { type: 'SET_DASHBOARD_LOADING'; payload: boolean }
+    | { type: 'SET_DASHBOARD_DATA'; payload: DashboardData | null }
+    | { type: 'SET_VIEW'; payload: { view: ViewType, props?: any } }
+    | { type: 'TOGGLE_FEATURE_VISIBILITY'; payload: { featureId: string } }
+    | { type: 'SET_SELECTED_REPO'; payload: { owner: string; repo: string } }
+    | { type: 'LOAD_PROJECT_FILES'; payload: FileNode };
 
 
-const initialState: GlobalState = {
-  activeView: 'ai-command-center',
-  viewProps: {},
-  theme: 'light',
-  hiddenFeatures: [],
-  isGithubConnected: false,
-  githubToken: null,
-  githubUser: null,
-  isHuggingFaceConnected: false,
-  projectFiles: null,
-  selectedRepo: null,
+const initialState: AppState = {
+    rootHandle: null,
+    currentHandle: null,
+    path: [],
+    files: [],
+    loading: false,
+    error: null,
+    viewType: 'grid',
+    sort: { field: 'name', direction: 'asc' },
+    modal: null,
+    isTerminalOpen: false,
+    searchResults: null,
+    githubToken: localStorage.getItem('github_pat'),
+    githubUser: null,
+    isGithubConnected: false,
+    isDashboardVisible: false,
+    dashboardData: null,
+    isDashboardLoading: false,
+    activeView: 'ai-command-center',
+    viewProps: {},
+    hiddenFeatures: [],
+    selectedRepo: null,
+    projectFiles: null,
 };
 
-const reducer = (state: GlobalState, action: Action): GlobalState => {
-  switch (action.type) {
-    case 'SET_VIEW':
-      return { ...state, activeView: action.payload.view, viewProps: action.payload.props || {} };
-    case 'TOGGLE_FEATURE_VISIBILITY': {
-        const { featureId } = action.payload;
-        const isHidden = state.hiddenFeatures.includes(featureId);
-        const newHiddenFeatures = isHidden
-            ? state.hiddenFeatures.filter(id => id !== featureId)
-            : [...state.hiddenFeatures, featureId];
-        return { ...state, hiddenFeatures: newHiddenFeatures };
+const reducer = (state: AppState, action: Action): AppState => {
+    switch (action.type) {
+        case 'SET_ROOT_HANDLE':
+            // Reset most of the state but persist authentication
+            return { 
+                ...initialState, 
+                rootHandle: action.payload, 
+                githubToken: state.githubToken,
+                githubUser: state.githubUser,
+                isGithubConnected: state.isGithubConnected,
+            };
+        case 'SET_CURRENT_HANDLE':
+            return {
+                ...state,
+                currentHandle: action.payload.handle,
+                path: action.payload.path,
+                dashboardData: null,
+                isDashboardLoading: false,
+            };
+        case 'SET_FILES':
+            return { ...state, files: action.payload };
+        case 'SET_LOADING':
+            return { ...state, loading: action.payload };
+        case 'SET_ERROR':
+            return { ...state, error: action.payload, loading: false };
+        case 'SET_VIEW_TYPE':
+            return { ...state, viewType: action.payload };
+        case 'SET_SORT':
+            return { ...state, sort: action.payload };
+        case 'OPEN_MODAL':
+            return { ...state, modal: action.payload };
+        case 'CLOSE_MODAL':
+            return { ...state, modal: null };
+        case 'TOGGLE_TERMINAL':
+            return { ...state, isTerminalOpen: !state.isTerminalOpen };
+        case 'SET_SEARCH_RESULTS':
+            return { ...state, searchResults: action.payload };
+        case 'TOGGLE_DASHBOARD':
+            return { ...state, isDashboardVisible: !state.isDashboardVisible };
+        case 'SET_DASHBOARD_LOADING':
+            return { ...state, isDashboardLoading: action.payload };
+        case 'SET_DASHBOARD_DATA':
+            return { ...state, dashboardData: action.payload, isDashboardLoading: false };
+        case 'SET_GITHUB_TOKEN':
+            if (action.payload.token) {
+                localStorage.setItem('github_pat', action.payload.token);
+            } else {
+                localStorage.removeItem('github_pat');
+            }
+            return {
+                ...state,
+                githubToken: action.payload.token,
+                githubUser: action.payload.user,
+                isGithubConnected: !!action.payload.token,
+            };
+        case 'LOGOUT':
+             localStorage.removeItem('github_pat');
+             return {
+                 ...state,
+                 githubToken: null,
+                 githubUser: null,
+                 isGithubConnected: false,
+                 // Also reset repo-specific state
+                 selectedRepo: null,
+                 projectFiles: null,
+             };
+        case 'SET_VIEW':
+            return { ...state, activeView: action.payload.view, viewProps: action.payload.props || {} };
+        case 'TOGGLE_FEATURE_VISIBILITY': {
+            const { featureId } = action.payload;
+            const isHidden = state.hiddenFeatures.includes(featureId);
+            return {
+                ...state,
+                hiddenFeatures: isHidden
+                    ? state.hiddenFeatures.filter(id => id !== featureId)
+                    : [...state.hiddenFeatures, featureId],
+            };
+        }
+        case 'SET_SELECTED_REPO':
+            return { ...state, selectedRepo: action.payload };
+        case 'LOAD_PROJECT_FILES':
+            return { ...state, projectFiles: action.payload };
+        default:
+            return state;
     }
-    case 'SET_GITHUB_TOKEN': {
-        const isConnected = !!action.payload.token;
-        return {
-            ...state,
-            githubToken: action.payload.token,
-            githubUser: action.payload.user,
-            isGithubConnected: isConnected,
-            // Reset repo-specific data if disconnected
-            selectedRepo: isConnected ? state.selectedRepo : null,
-            projectFiles: isConnected ? state.projectFiles : null,
-        };
-    }
-    case 'LOGOUT':
-        return {
-            ...state,
-            githubToken: null,
-            githubUser: null,
-            isGithubConnected: false,
-            selectedRepo: null,
-            projectFiles: null,
-        };
-    case 'SET_HUGGINGFACE_CONNECTED':
-      return { ...state, isHuggingFaceConnected: action.payload };
-    case 'LOAD_PROJECT_FILES':
-      return { ...state, projectFiles: action.payload };
-    case 'SET_SELECTED_REPO':
-      return { ...state, selectedRepo: action.payload, projectFiles: null }; // Reset files on repo change
-    default:
-      return state;
-  }
 };
 
-const GlobalStateContext = createContext<{
-  state: GlobalState;
-  dispatch: React.Dispatch<Action>;
+const AppContext = createContext<{
+    state: AppState;
+    dispatch: React.Dispatch<Action>;
+    openFolder: () => Promise<void>;
 }>({
-  state: initialState,
-  dispatch: () => null,
+    state: initialState,
+    dispatch: () => null,
+    openFolder: async () => {},
 });
 
-const LOCAL_STORAGE_KEY = 'devcore_snapshot';
-const CONSENT_KEY = 'devcore_ls_consent';
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [state, dispatch] = useReducer(reducer, initialState);
 
-export const GlobalStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const canPersist = (() => {
-        try {
-            return localStorage.getItem(CONSENT_KEY) === 'granted';
-        } catch (e) {
-            return false;
+    const openFolder = useCallback(async () => {
+        const handle = await openDirectoryAndIngest();
+        if (handle) {
+            dispatch({ type: 'SET_ROOT_HANDLE', payload: handle });
         }
-    })();
-
-    const [state, dispatch] = useReducer(reducer, initialState, (initial) => {
-        if (!canPersist) return initial;
-        
-        try {
-            const storedStateJSON = localStorage.getItem(LOCAL_STORAGE_KEY);
-            if (!storedStateJSON) return initial;
-            
-            const storedState = JSON.parse(storedStateJSON);
-            const hydratedState = { ...initial };
-
-            // Hydrate state from local storage
-            if (storedState.githubToken) hydratedState.githubToken = storedState.githubToken;
-            if (storedState.selectedRepo) hydratedState.selectedRepo = storedState.selectedRepo;
-            if (storedState.activeView) hydratedState.activeView = storedState.activeView;
-            if (storedState.hiddenFeatures) hydratedState.hiddenFeatures = storedState.hiddenFeatures;
-            
-            return hydratedState;
-        } catch (error) {
-            console.error("Failed to parse state from localStorage", error);
-            return initial;
-        }
-    });
+    }, []);
 
     useEffect(() => {
-        if (!canPersist) return;
-
-        const handler = setTimeout(() => {
-            try {
-                const stateToSave = { 
-                    githubToken: state.githubToken,
-                    selectedRepo: state.selectedRepo,
-                    activeView: state.activeView,
-                    hiddenFeatures: state.hiddenFeatures,
-                };
-                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(stateToSave));
-            } catch (error) {
-                console.error("Failed to save state to localStorage", error);
-            }
-        }, 500);
-        
-        return () => clearTimeout(handler);
-    }, [state, canPersist]);
-
+        if (state.rootHandle) {
+            ingestDirectory(state.rootHandle).then(() => {
+                dispatch({
+                    type: 'SET_CURRENT_HANDLE',
+                    payload: { handle: state.rootHandle!, path: [{ name: state.rootHandle!.name, handle: state.rootHandle! }] },
+                });
+            });
+        }
+    }, [state.rootHandle]);
 
     return (
-        <GlobalStateContext.Provider value={{ state, dispatch }}>
+        <AppContext.Provider value={{ state, dispatch, openFolder }}>
             {children}
-        </GlobalStateContext.Provider>
+        </AppContext.Provider>
     );
 };
 
-export const useGlobalState = () => useContext(GlobalStateContext);
+export const useAppContext = () => useContext(AppContext);

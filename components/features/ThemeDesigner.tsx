@@ -1,10 +1,13 @@
+
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { SparklesIcon, ArrowDownTrayIcon } from '../icons.tsx';
-import { generateThemeFromDescription } from '../../services/geminiService.ts';
+// FIX: Import from index.ts where all services are exported
+import { generateThemeFromDescription } from '../../services/index.ts';
 import type { ColorTheme } from '../../types.ts';
 import { LoadingSpinner } from '../shared/index.tsx';
 import { HexColorPicker } from 'react-colorful';
-import { downloadFile } from '../../services/fileUtils.ts';
+import { downloadFile } from '../../services/index.ts';
 
 const ColorInput: React.FC<{ label: string; color: string; onChange: (color: string) => void; }> = ({ label, color, onChange }) => {
     const [isOpen, setIsOpen] = useState(false);

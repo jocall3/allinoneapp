@@ -1,7 +1,9 @@
+
 import React, { Suspense, useRef, useState } from 'react';
 import type { Feature } from '../../types.ts';
 import { FEATURES_MAP } from '../features/index.ts';
-import { LoadingIndicator } from '../../App.tsx';
+// FIX: Replaced non-existent LoadingIndicator with LoadingSpinner from shared components.
+import { LoadingSpinner } from '../shared/index.tsx';
 import { MinimizeIcon, XMarkIcon } from '../icons.tsx';
 
 interface WindowState {
@@ -78,7 +80,7 @@ export const Window: React.FC<WindowProps> = ({ feature, state, isActive, onClos
       </header>
       <main className="flex-1 overflow-auto bg-slate-800/50 rounded-b-lg">
         {FeatureComponent ? (
-          <Suspense fallback={<LoadingIndicator/>}>
+          <Suspense fallback={<LoadingSpinner/>}>
             <FeatureComponent />
           </Suspense>
         ) : (

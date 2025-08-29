@@ -1,9 +1,12 @@
+
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { LockClosedIcon, SparklesIcon, TrashIcon, ClipboardDocumentIcon, ArrowDownTrayIcon } from '../icons.tsx';
 import { useLocalStorage } from '../../hooks/useLocalStorage.ts';
-import { enhanceSnippetStream } from '../../services/geminiService.ts';
+// FIX: Import from index.ts where all services are exported
+import { enhanceSnippetStream } from '../../services/index.ts';
 import { LoadingSpinner } from '../shared/index.tsx';
-import { downloadFile } from '../../services/fileUtils.ts';
+import { downloadFile } from '../../services/index.ts';
 
 interface Snippet {
     id: number; name: string; code: string; language: string; tags: string[];

@@ -1,9 +1,9 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
-import type { OrganizationSuggestion } from '../types';
+import type { OrganizationSuggestion, FileNode, DashboardData } from '../types';
+import * as db from './database';
+import { readFileContent } from './fileSystemService';
 
 const MODEL_NAME = 'gemini-2.5-flash';
-// As per instructions, API_KEY is sourced from process.env
 const API_KEY = process.env.API_KEY;
 
 if (!API_KEY) {
@@ -33,166 +33,142 @@ const organizationSchema = {
   },
 };
 
-export async function suggestOrganization(fileNames: string[]): Promise<OrganizationSuggestion[]> {
-  if (fileNames.length === 0) {
-    return [];
-  }
-
-  const prompt = `
-    Given the following list of file names, suggest a folder structure to organize them.
-    Group related files together into folders. Only include files from the provided list.
-    Provide the output as a JSON array of objects, where each object has "folderName" and "fileNames" keys.
-    
-    Example:
-    File list: "report-2023.pdf", "sales-chart.png", "report-2022.pdf", "team-photo.jpg"
-    Output:
-    [
-      { "folderName": "Reports", "fileNames": ["report-2023.pdf", "report-2022.pdf"] },
-      { "folderName": "Images", "fileNames": ["sales-chart.png", "team-photo.jpg"] }
-    ]
-
-    File list to organize:
-    ${fileNames.join('\n')}
-  `;
-
-  try {
-    const response = await ai.models.generateContent({
-      model: MODEL_NAME,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: organizationSchema,
+const dashboardSchema = {
+  type: Type.OBJECT,
+  properties: {
+    summary: {
+      type: Type.STRING,
+      description: "A concise, one-paragraph summary of the folder's purpose and contents."
+    },
+    projectType: {
+      type: Type.STRING,
+      description: "A short label for the detected project type (e.g., 'React Application', 'Image Collection', 'Python Scripts', 'Document Archive')."
+    },
+    keyFiles: {
+      type: Type.ARRAY,
+      description: "An array of the 3-5 most important files in this directory.",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          fileName: { type: Type.STRING, description: "The name of the key file." },
+          reason: { type: Type.STRING, description: "A brief, one-sentence reason why this file is important." }
+        },
+        required: ['fileName', 'reason']
       }
-    });
-
-    const text = response.text.trim();
-    if (!text) {
-        console.warn("Received empty response from Gemini API");
-        return [];
+    },
+    suggestedActions: {
+      type: Type.ARRAY,
+      description: "A list of 2-3 suggested next actions for the user.",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          action: { type: Type.STRING, description: "A short, actionable suggestion (e.g., 'Install dependencies')." },
+          command: { type: Type.STRING, description: "An optional terminal command related to the action (e.g., 'npm install')." }
+        },
+        required: ['action']
+      }
+    },
+    techStack: {
+      type: Type.ARRAY,
+      description: "A list of technologies, libraries, or frameworks detected in the folder.",
+      items: { type: Type.STRING }
     }
-    
-    const suggestions = JSON.parse(text) as OrganizationSuggestion[];
+  },
+  required: ['summary', 'projectType', 'keyFiles', 'suggestedActions', 'techStack']
+};
 
-    const validFileNames = new Set(fileNames);
-    return suggestions
-      .map(suggestion => ({
-        ...suggestion,
-        fileNames: suggestion.fileNames.filter(fileName => validFileNames.has(fileName)),
-      }))
-      .filter(suggestion => suggestion.fileNames.length > 0);
 
-  } catch (error) {
-    console.error("Error calling Gemini API for organization:", error);
-    throw new Error("Failed to get organization suggestions from Gemini.");
-  }
+export async function suggestOrganization(fileNames: string[]): Promise<OrganizationSuggestion[]> {
+  if (fileNames.length === 0) return [];
+  const prompt = `Given the following list of file names, suggest a folder structure... File list: ${fileNames.join(', ')}`;
+  const response = await ai.models.generateContent({ model: MODEL_NAME, contents: prompt, config: { responseMimeType: "application/json", responseSchema: organizationSchema }});
+  const suggestions = JSON.parse(response.text.trim()) as OrganizationSuggestion[];
+  const validFileNames = new Set(fileNames);
+  return suggestions.map(s => ({ ...s, fileNames: s.fileNames.filter(f => validFileNames.has(f)) })).filter(s => s.fileNames.length > 0);
 }
 
 export async function explainFolder(fileNames: string[]): Promise<string> {
-  if (fileNames.length === 0) {
-    return "This folder is empty.";
-  }
-  const prompt = `
-    Based on the following list of filenames from a directory, provide a high-level summary of the folder's purpose.
-    Describe the likely project type, identify any key files, and explain what the folder contains in a concise, helpful paragraph.
-    Use Markdown for formatting if it helps clarity (e.g., lists, bolding).
-
-    Filenames:
-    ${fileNames.join('\n')}
-  `;
-
-  try {
-    const response = await ai.models.generateContent({ model: MODEL_NAME, contents: prompt });
-    return response.text;
-  } catch (error) {
-    console.error("Error calling Gemini API for folder explanation:", error);
-    throw new Error("Failed to get folder explanation from Gemini.");
-  }
+  if (fileNames.length === 0) return "This folder is empty.";
+  const prompt = `Based on these filenames, summarize the folder's purpose: ${fileNames.join(', ')}`;
+  const response = await ai.models.generateContent({ model: MODEL_NAME, contents: prompt });
+  return response.text;
 }
 
 export async function generatePreview(fileName: string, fileContent: string): Promise<string> {
-    const prompt = `
-      Provide a very brief, one-sentence summary of the following file content.
-      The file is named "${fileName}". Focus on the main purpose of the file.
-      
-      Content:
-      ---
-      ${fileContent.substring(0, 4000)}
-      ---
-    `;
-    try {
-      const response = await ai.models.generateContent({ model: MODEL_NAME, contents: prompt });
-      return response.text;
-    } catch (error) {
-      console.error("Error calling Gemini API for preview:", error);
-      throw new Error("Failed to generate preview.");
-    }
+    const prompt = `Provide a very brief, one-sentence summary of the file named "${fileName}". Content excerpt: "${fileContent.substring(0, 2000)}"`;
+    const response = await ai.models.generateContent({ model: MODEL_NAME, contents: prompt });
+    return response.text;
 }
 
+export async function performSemanticSearch(query: string, rootHandle: FileSystemDirectoryHandle): Promise<FileNode[]> {
+    const allDbFiles = await db.getAllFilesFromDB();
+    const filesWithContent = await Promise.all(
+        allDbFiles.filter(f => !f.isDirectory).map(async f => {
+            try {
+                const handle = await rootHandle.getFileHandle(f.path.split('/').slice(1).join('/'), { create: false });
+                const content = await readFileContent(handle);
+                return { name: f.path, content: content.substring(0, 4000) };
+            } catch { return null; }
+        })
+    );
 
-export async function performSemanticSearch(query: string, files: { name: string, content: string }[]): Promise<string[]> {
-  const prompt = `
-    I am searching for: "${query}".
-    From the following list of files, please identify which ones are the most relevant to my search query.
-    Consider the file name and its content. Return your answer as a JSON array of filenames. Only return filenames that exist in the provided list.
+    const validFiles = filesWithContent.filter(Boolean) as { name: string, content: string }[];
+    const prompt = `Search for: "${query}". From the files provided, return a JSON array of the full file paths that are most relevant. Files: ${JSON.stringify(validFiles)}`;
+    const response = await ai.models.generateContent({ model: MODEL_NAME, contents: prompt, config: { responseMimeType: "application/json", responseSchema: { type: Type.ARRAY, items: { type: Type.STRING } } }});
+    const relevantPaths = JSON.parse(response.text.trim()) as string[];
     
-    Example:
-    Query: "marketing report"
-    Files: [{"name": "sales.txt", "content": "Q1 sales were up."}, {"name": "report-final.txt", "content": "This is the Q2 marketing report..."}]
-    Output: ["report-final.txt"]
-
-    Files to search:
-    ${JSON.stringify(files.map(f => ({ name: f.name, content: f.content.substring(0, 2000) })))}
-  `;
-
-  try {
-    const response = await ai.models.generateContent({
-      model: MODEL_NAME,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          items: { type: Type.STRING }
-        },
-      }
-    });
-
-    const text = response.text.trim();
-    return JSON.parse(text) as string[];
-  } catch (error) {
-    console.error("Error calling Gemini API for semantic search:", error);
-    throw new Error("Semantic search failed.");
-  }
+    const relevantFileNodes: FileNode[] = [];
+    for(const path of relevantPaths) {
+        const file = allDbFiles.find(f => f.path === path);
+        if (file) {
+            try {
+                const handle = await rootHandle.getFileHandle(file.path.split('/').slice(1).join('/'), { create: false });
+                relevantFileNodes.push({ ...file, handle });
+            } catch {}
+        }
+    }
+    return relevantFileNodes;
 }
 
 export async function performContextualAction(action: 'summarize' | 'explain_code', fileContent: string): Promise<string> {
     let prompt = '';
     switch (action) {
         case 'summarize':
-            prompt = `Please provide a detailed summary of the following document. Use markdown for formatting, including a title, key points in a bulleted list, and a concluding sentence.
-            
-            Document Content:
-            ---
-            ${fileContent}
-            ---
-            `;
+            prompt = `Provide a detailed summary of the following document:\n---\n${fileContent}\n---`;
             break;
         case 'explain_code':
-            prompt = `Please provide a detailed explanation of the following code snippet. Describe its purpose, how it works, and identify any potential improvements.
-            
-            Code:
-            ---
-            ${fileContent}
-            ---
-            `;
+            prompt = `Provide a detailed explanation of the following code:\n---\n${fileContent}\n---`;
             break;
     }
+    const response = await ai.models.generateContent({ model: MODEL_NAME, contents: prompt });
+    return response.text;
+}
 
-    try {
-        const response = await ai.models.generateContent({ model: MODEL_NAME, contents: prompt });
-        return response.text;
-    } catch (error) {
-        console.error(`Error calling Gemini API for action '${action}':`, error);
-        throw new Error(`Failed to perform AI action: ${action}.`);
+export async function generateProjectDashboard(files: FileNode[]): Promise<DashboardData> {
+  const fileList = files.map(f => `${f.name}${f.isDirectory ? '/' : ` (${f.size} bytes)`}`).join('\n');
+  const prompt = `
+    As a senior project manager AI, analyze the following file list from a directory and provide a structured overview.
+
+    File List:
+    ---
+    ${fileList}
+    ---
+
+    Based on this list, generate a JSON object that provides a summary, identifies the project type, lists key files, suggests next actions, and identifies the tech stack. Be concise and helpful.
+  `;
+
+  const response = await ai.models.generateContent({
+    model: MODEL_NAME,
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: dashboardSchema,
     }
+  });
+  
+  const dashboardData = JSON.parse(response.text.trim()) as DashboardData;
+  const validFileNames = new Set(files.map(f => f.name));
+  dashboardData.keyFiles = dashboardData.keyFiles.filter(kf => validFileNames.has(kf.fileName));
+
+  return dashboardData;
 }

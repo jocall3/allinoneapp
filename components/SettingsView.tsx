@@ -1,6 +1,8 @@
 import React from 'react';
-import { useGlobalState } from '../contexts/GlobalStateContext.tsx';
-import { clearAllFiles } from '../services/index.ts';
+// FIX: Renamed useGlobalState to useAppContext to match the export.
+import { useAppContext } from '../contexts/GlobalStateContext.tsx';
+// FIX: Import aliased function to resolve export conflict
+import { clearAllGeneratedFiles } from '../services/index.ts';
 import { useLocalStorage } from '../hooks/useLocalStorage.ts';
 import { ALL_FEATURES } from './features/index.ts';
 import { SunIcon, MoonIcon, TrashIcon } from './icons.tsx';
@@ -19,14 +21,15 @@ const ToggleSwitch: React.FC<{ checked: boolean, onChange: () => void }> = ({ ch
 };
 
 export const SettingsView: React.FC = () => {
-    const { state, dispatch } = useGlobalState();
+    const { state, dispatch } = useAppContext();
     const [, setSnippets] = useLocalStorage('devcore_snippets', []);
     const [, setNotes] = useLocalStorage('devcore_moodboard', []);
     const [, setDevNotes] = useLocalStorage('devcore_notes', []);
 
     const handleClearGeneratedFiles = async () => {
         if (window.confirm("Are you sure you want to delete all AI-generated files? This cannot be undone.")) {
-            await clearAllFiles();
+            // FIX: Use aliased function to avoid ambiguity
+            await clearAllGeneratedFiles();
             alert("Generated files cleared.");
         }
     };

@@ -2,7 +2,7 @@ import { openDB, DBSchema } from 'idb';
 import type { GeneratedFile } from '../types.ts';
 
 const DB_NAME = 'devcore-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // FIX: Incremented version to resolve error
 const STORE_NAME = 'generated-files';
 
 interface DevCoreDB extends DBSchema {
@@ -14,11 +14,18 @@ interface DevCoreDB extends DBSchema {
 }
 
 const dbPromise = openDB<DevCoreDB>(DB_NAME, DB_VERSION, {
-  upgrade(db) {
-    const store = db.createObjectStore(STORE_NAME, {
-      keyPath: 'filePath',
-    });
-    store.createIndex('by-filePath', 'filePath');
+  upgrade(db, oldVersion) {
+    if (oldVersion < 2) {
+        if (db.objectStoreNames.contains(STORE_NAME)) {
+            db.deleteObjectStore(STORE_NAME);
+        }
+    }
+    if (!db.objectStoreNames.contains(STORE_NAME)) {
+        const store = db.createObjectStore(STORE_NAME, {
+            keyPath: 'filePath',
+        });
+        store.createIndex('by-filePath', 'filePath');
+    }
   },
 });
 

@@ -1,10 +1,12 @@
+
 import React, { useState, useCallback } from 'react';
 import { Type, FunctionDeclaration } from "@google/genai";
-import { getInferenceFunction, CommandResponse, FEATURE_TAXONOMY, logError } from '../../services/index.ts';
-import { useGlobalState } from '../../contexts/GlobalStateContext.tsx';
-import { CommandLineIcon } from '../icons.tsx';
-import { LoadingSpinner } from '../shared/index.tsx';
-import { ALL_FEATURES } from './index.ts';
+import { getInferenceFunction, CommandResponse, FEATURE_TAXONOMY, logError } from '../../services/index';
+// FIX: Renamed useGlobalState to useAppContext
+import { useAppContext } from '../../contexts/GlobalStateContext';
+import { CommandLineIcon } from '../icons';
+import { LoadingSpinner } from '../shared/index';
+import { RAW_FEATURES } from '../../constants';
 
 const functionDeclarations: FunctionDeclaration[] = [
     {
@@ -16,7 +18,7 @@ const functionDeclarations: FunctionDeclaration[] = [
                 featureId: { 
                     type: Type.STRING, 
                     description: 'The ID of the feature to navigate to.',
-                    enum: ALL_FEATURES.map(f => f.id)
+                    enum: RAW_FEATURES.map(f => f.id)
                 },
             },
             required: ['featureId'],
@@ -31,7 +33,7 @@ const functionDeclarations: FunctionDeclaration[] = [
                  featureId: { 
                     type: Type.STRING, 
                     description: 'The ID of the feature to run.',
-                    enum: ALL_FEATURES.map(f => f.id)
+                    enum: RAW_FEATURES.map(f => f.id)
                 },
                 props: {
                     type: Type.OBJECT,
@@ -65,7 +67,7 @@ const ExamplePromptButton: React.FC<{ text: string, onClick: (text: string) => v
 )
 
 export const AiCommandCenter: React.FC = () => {
-    const { dispatch } = useGlobalState();
+    const { dispatch } = useAppContext();
     const [prompt, setPrompt] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [lastResponse, setLastResponse] = useState('');

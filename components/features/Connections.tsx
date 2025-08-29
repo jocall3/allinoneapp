@@ -1,12 +1,14 @@
+
 import React, { useState, useEffect } from 'react';
 import { GithubIcon } from '../icons.tsx';
-import { useGlobalState } from '../../contexts/GlobalStateContext.tsx';
+// FIX: Renamed useGlobalState to useAppContext
+import { useAppContext } from '../../contexts/GlobalStateContext.tsx';
 import { initializeOctokit, validateToken } from '../../services/index.ts';
 import { LoadingSpinner } from '../shared/LoadingSpinner.tsx';
 import type { User } from '../../types.ts';
 
 const GitHubConnection: React.FC = () => {
-    const { state, dispatch } = useGlobalState();
+    const { state, dispatch } = useAppContext();
     const { githubToken, isGithubConnected, githubUser } = state;
     const [tokenInput, setTokenInput] = useState(githubToken || '');
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -62,7 +64,6 @@ const GitHubConnection: React.FC = () => {
                              <p className="text-sm text-text-secondary">Not Connected</p>
                         )}
                     </div>
-                </div>
                  {isGithubConnected && (
                     <button onClick={handleDisconnect} className="px-4 py-2 bg-red-500/10 text-red-600 font-semibold rounded-lg hover:bg-red-500/20">
                         Disconnect

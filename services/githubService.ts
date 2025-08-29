@@ -1,14 +1,39 @@
+// @ts-ignore
+import { Octokit } from "https://esm.sh/octokit@4.0.2";
+import type { Repo, FileNode, User } from '../types.ts';
+import { logEvent, logError, measurePerformance } from './telemetryService';
 
-import { getOctokit } from './authService.ts';
-import type { Repo, FileNode } from './types.ts';
-import { logEvent, logError, measurePerformance } from './services/index.ts';
+let octokit: Octokit | null = null;
+
+export const initializeOctokit = (token: string) => {
+  if (token) {
+    octokit = new Octokit({ auth: token });
+  } else {
+    octokit = null;
+  }
+};
+
+export const getOctokit = (): Octokit => {
+    if (!octokit) {
+        throw new Error("Octokit has not been initialized. Please connect to GitHub first.");
+    }
+    return octokit;
+};
+
+export const validateToken = async (token: string): Promise<User> => {
+    const tempOctokit = new Octokit({ auth: token });
+    const { data: user } = await tempOctokit.request('GET /user');
+    return user as User;
+};
+
+export const logout = async (): Promise<void> => {
+    octokit = null;
+    return Promise.resolve();
+};
+
 
 // --- Repository-Level Functions ---
 
-/**
- * Fetches the repositories for the authenticated user.
- * @returns A promise that resolves to an array of Repo objects.
- */
 export const getRepos = async (): Promise<Repo[]> => {
     return measurePerformance('getRepos', async () => {
         logEvent('getRepos_start');
@@ -28,12 +53,6 @@ export const getRepos = async (): Promise<Repo[]> => {
     });
 };
 
-/**
- * Deletes a repository. This is a destructive action.
- * @param owner The repository owner's login.
- * @param repo The repository name.
- * @returns A promise that resolves when the deletion is complete.
- */
 export const deleteRepo = async (owner: string, repo: string): Promise<void> => {
      return measurePerformance('deleteRepo', async () => {
         logEvent('deleteRepo_start', { owner, repo });
@@ -53,23 +72,15 @@ export const deleteRepo = async (owner: string, repo: string): Promise<void> => 
 
 // --- File and Tree Functions ---
 
-/**
- * Fetches the file tree for a repository recursively.
- * @param owner The repository owner's login.
- * @param repo The repository name.
- * @returns A promise that resolves to the root FileNode of the repository.
- */
 export const getRepoTree = async (owner: string, repo: string): Promise<FileNode> => {
      return measurePerformance('getRepoTree', async () => {
         logEvent('getRepoTree_start', { owner, repo });
         try {
             const octokit = getOctokit();
-            const { data: branch } = await octokit.request('GET /repos/{owner}/{repo}/branches/{branch}', {
-                owner,
-                repo,
-                branch: 'main', // or default branch
-            });
-            const treeSha = branch.commit.sha;
+            const { data: repoData } = await octokit.request('GET /repos/{owner}/{repo}', { owner, repo });
+            const defaultBranch = repoData.default_branch;
+            const { data: branch } = await octokit.request('GET /repos/{owner}/{repo}/branches/{branch}', { owner, repo, branch: defaultBranch });
+            const treeSha = branch.commit.commit.tree.sha;
             
             const { data: treeData } = await octokit.request('GET /repos/{owner}/{repo}/git/trees/{tree_sha}', {
                 owner,
@@ -78,7 +89,6 @@ export const getRepoTree = async (owner: string, repo: string): Promise<FileNode
                 recursive: 'true',
             });
 
-            // FIX: Create a valid root FileNode
             const root: FileNode = { 
                 id: repo,
                 name: repo, 
@@ -91,29 +101,28 @@ export const getRepoTree = async (owner: string, repo: string): Promise<FileNode
             };
             
             treeData.tree.forEach((item: any) => {
+                if (!item.path) return;
                 const pathParts = item.path.split('/');
                 let currentNode = root;
 
                 pathParts.forEach((part, index) => {
-                    // FIX: Ensure children array exists before searching
                     if (!currentNode.children) {
                         currentNode.children = [];
                     }
                     let childNode = currentNode.children.find(child => child.name === part);
 
                     if (!childNode) {
-                        // FIX: Create a valid FileNode for each item in the tree
+                        const isLastPart = index === pathParts.length - 1;
                         childNode = {
                             id: item.path,
                             name: part,
                             path: item.path,
-                            isDirectory: item.type === 'tree',
+                            isDirectory: isLastPart ? (item.type === 'tree') : true,
                             parentId: currentNode.path,
                             size: item.size || 0,
                             modified: Date.now(), // GitHub API doesn't provide this in the tree view
                         };
-                        if(item.type === 'tree') childNode.children = [];
-                        // FIX: Ensure children array exists before pushing
+                        if(childNode.isDirectory) childNode.children = [];
                         if (!currentNode.children) {
                             currentNode.children = [];
                         }
@@ -132,13 +141,6 @@ export const getRepoTree = async (owner: string, repo: string): Promise<FileNode
     });
 };
 
-/**
- * Fetches the content of a specific file from a repository.
- * @param owner The repository owner's login.
- * @param repo The repository name.
- * @param path The full path to the file within the repository.
- * @returns A promise that resolves to the string content of the file.
- */
 export const getFileContent = async (owner: string, repo: string, path: string): Promise<string> => {
     return measurePerformance('getFileContent', async () => {
         logEvent('getFileContent_start', { owner, repo, path });
@@ -150,39 +152,23 @@ export const getFileContent = async (owner: string, repo: string, path: string):
                 path,
             });
 
-            if (Array.isArray(data) || data.type !== 'file' || !data.content) {
-                 throw new Error("Path did not point to a valid file.");
+            if (Array.isArray(data) || data.type !== 'file' || typeof data.content !== 'string') {
+                 throw new Error("Path did not point to a valid file or content was missing.");
             }
 
             // The content is Base64 encoded, so we need to decode it.
             const content = atob(data.content);
-            logEvent('getFileContent_success', { owner, repo, path });
+            logEvent('getFileContent_success', { owner, repo, path, size: content.length });
             return content;
         } catch (error) {
              logError(error as Error, { context: 'getFileContent', owner, repo, path });
-             throw new Error(`Failed to fetch file content: ${(error as Error).message}`);
+             throw new Error(`Failed to fetch file content for "${path}": ${(error as Error).message}`);
         }
     });
 };
 
 // --- Commit and Branching Functions ---
 
-/**
- * Commits one or more files to a repository in a single commit.
- * This is a multi-step process:
- * 1. Get the latest commit SHA of the branch.
- * 2. Get the base tree SHA from that commit.
- * 3. Create new blob(s) for the file content.
- * 4. Create a new tree with the new blob(s).
- * 5. Create a new commit pointing to the new tree.
- * 6. Update the branch reference to point to the new commit.
- * @param owner The repository owner's login.
- * @param repo The repository name.
- * @param files An array of file objects with filePath and content.
- * @param message The commit message.
- * @param branch The branch to commit to (defaults to 'main').
- * @returns A promise that resolves with the URL of the new commit.
- */
 export const commitFiles = async (
     owner: string,
     repo: string,

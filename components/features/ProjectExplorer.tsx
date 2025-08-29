@@ -1,11 +1,11 @@
 
-
 import React, { useState, useEffect } from 'react';
-import { useGlobalState } from '../../contexts/GlobalStateContext.tsx';
-import { getRepos, getRepoTree, getFileContent } from '../../services/index.ts';
-import type { Repo, FileNode } from '../../types.ts';
-import { FolderIcon, DocumentIcon } from '../icons.tsx';
-import { LoadingSpinner } from '../shared/index.tsx';
+// FIX: Renamed useGlobalState to useAppContext
+import { useAppContext } from '../../contexts/GlobalStateContext';
+import { getRepos, getRepoTree, getFileContent } from '../../services/index';
+import type { Repo, FileNode } from '../../types';
+import { FolderIcon, DocumentIcon } from '../icons';
+import { LoadingSpinner } from '../shared/index';
 
 const FileTree: React.FC<{ node: FileNode, onFileSelect: (path: string) => void }> = ({ node, onFileSelect }) => {
     const [isOpen, setIsOpen] = useState(true);
@@ -44,7 +44,7 @@ const FileTree: React.FC<{ node: FileNode, onFileSelect: (path: string) => void 
 };
 
 export const ProjectExplorer: React.FC = () => {
-    const { state, dispatch } = useGlobalState();
+    const { state, dispatch } = useAppContext();
     const { githubToken, selectedRepo, projectFiles } = state;
     const [repos, setRepos] = useState<Repo[]>([]);
     const [isLoading, setIsLoading] = useState<'repos' | 'tree' | null>(null);

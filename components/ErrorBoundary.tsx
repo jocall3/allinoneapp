@@ -1,10 +1,9 @@
 
-
 import React from 'react';
-import { logError } from '../services/index.ts';
-import { debugErrorStream } from '../services/index.ts';
-import { SparklesIcon } from './icons.tsx';
-import { MarkdownRenderer, LoadingSpinner } from './shared/index.tsx';
+// FIX: Corrected import paths for services.
+import { logError, debugErrorStream } from '../services/index';
+import { SparklesIcon } from './icons';
+import { MarkdownRenderer, LoadingSpinner } from './shared/index';
 
 interface Props {
   children: React.ReactNode;

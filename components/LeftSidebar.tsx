@@ -1,10 +1,9 @@
 
-
 import React from 'react';
-import type { ViewType, SidebarItem } from '../types.ts';
-import { useGlobalState } from '../contexts/GlobalStateContext.tsx';
-import { logout } from '../services/index.ts';
-import { ArrowLeftOnRectangleIcon } from './icons.tsx';
+import type { ViewType, SidebarItem } from '../types';
+import { useAppContext } from '../contexts/GlobalStateContext';
+import { logout } from '../services';
+import { ArrowLeftOnRectangleIcon } from './icons';
 
 interface LeftSidebarProps {
   items: SidebarItem[];
@@ -24,7 +23,7 @@ const Tooltip: React.FC<{ text: string, children: React.ReactNode }> = ({ text, 
 };
 
 export const LeftSidebar: React.FC<LeftSidebarProps> = ({ items, activeView, onNavigate }) => {
-    const { state, dispatch } = useGlobalState();
+    const { state, dispatch } = useAppContext();
     const { githubUser: user } = state;
 
     const handleLogout = async () => {
@@ -63,7 +62,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ items, activeView, onN
           );
         })}
       </div>
-      <div className="mt-auto flex-shrink-0 flex flex-col items-center gap-2">
+      <div className="mt-auto flex-shrink-0 flex flex-col items-center gap-4">
          {user && (
             <Tooltip text={user.name || user.login}>
                  <img src={user.avatar_url} alt={user.login} className="w-10 h-10 rounded-full border-2 border-border" />

@@ -1,228 +1,110 @@
 
-import type { FileNode, OrganizationSuggestion } from '../types';
-import { addFile, clearAllFiles, deleteFileNode, deleteDescendants, updatePath } from './database';
-
-async function verifyPermission(fileHandle: FileSystemHandle, readWrite = false): Promise<boolean> {
-  const options: { mode?: 'read' | 'readwrite' } = {};
-  if (readWrite) {
-    options.mode = 'readwrite';
-  }
-  
-  if ((await (fileHandle as any).queryPermission(options)) === 'granted') {
-    return true;
-  }
-  if ((await (fileHandle as any).requestPermission(options)) === 'granted') {
-    return true;
-  }
-  return false;
-}
+import type { FileNode, OrganizationSuggestion, StorableFileNode } from '../types';
+import * as db from './database';
 
 export async function openDirectoryAndIngest(): Promise<FileSystemDirectoryHandle | null> {
-  try {
-    const directoryHandle = await (window as any).showDirectoryPicker();
-    if (directoryHandle) {
-      await ingestDirectory(directoryHandle);
-    }
-    return directoryHandle;
-  } catch (e) {
-    if (e instanceof DOMException && e.name === 'AbortError') {
-      return null;
-    }
-    console.error('Error opening directory picker:', e);
-    throw e;
-  }
-}
-
-async function calculateHash(file: File): Promise<string> {
-  const buffer = await file.arrayBuffer();
-  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-export async function ingestDirectory(directoryHandle: FileSystemDirectoryHandle, parentPath: string | null = null): Promise<void> {
-    const allowed = await verifyPermission(directoryHandle);
-    if (!allowed) throw new Error('Permission denied to read directory.');
-
-    if (parentPath === null) {
-      await clearAllFiles(); // Clear previous data when opening a new root
-    }
-
-    const currentDirPath = parentPath ? `${parentPath}/${directoryHandle.name}` : directoryHandle.name;
-
-    // Add directory entry to the database
-    await addFile({
-        id: directoryHandle.name,
-        name: directoryHandle.name,
-        isDirectory: true,
-        path: currentDirPath, // Full path is the key
-        handle: directoryHandle,
-        parentId: parentPath,
-        size: 0,
-        modified: 0, // Note: Directories don't have a reliable modified date
-    });
-    
-    for await (const handle of directoryHandle.values()) {
-        const childPath = `${currentDirPath}/${handle.name}`;
-        if (handle.kind === 'directory') {
-            await ingestDirectory(handle as FileSystemDirectoryHandle, currentDirPath);
-        } else {
-            try {
-                const file = await (handle as FileSystemFileHandle).getFile();
-                const cid = await calculateHash(file);
-
-                await addFile({
-                    id: handle.name,
-                    name: handle.name,
-                    isDirectory: false,
-                    path: childPath,
-                    handle: handle,
-                    parentId: currentDirPath,
-                    size: file.size,
-                    modified: file.lastModified,
-                    cid: cid,
-                });
-            } catch (e) {
-                console.warn(`Could not process file ${handle.name}:`, e);
-            }
-        }
-    }
-}
-
-export async function createDirectory(parentHandle: FileSystemDirectoryHandle, name: string, parentId: string): Promise<void> {
-    const allowed = await verifyPermission(parentHandle, true);
-    if (!allowed) {
-        throw new Error('Permission denied to create directory.');
-    }
-    const newHandle = await parentHandle.getDirectoryHandle(name, { create: true });
-    
-    const newPath = `${parentId}/${name}`;
-
-    await addFile({
-        id: name,
-        name: name,
-        isDirectory: true,
-        path: newPath,
-        handle: newHandle,
-        parentId: parentId,
-        size: 0,
-        modified: Date.now(),
-    });
-}
-
-export async function createFile(parentHandle: FileSystemDirectoryHandle, name: string): Promise<void> {
-    const allowed = await verifyPermission(parentHandle, true);
-    if (!allowed) throw new Error('Permission denied to create file.');
-    await parentHandle.getFileHandle(name, { create: true });
-}
-
-export async function renameItem(parentHandle: FileSystemDirectoryHandle, parentPath: string, oldName: string, newName: string): Promise<void> {
-    const allowed = await verifyPermission(parentHandle, true);
-    if (!allowed) throw new Error('Permission denied to rename.');
-
-    let handle: FileSystemHandle;
     try {
-        handle = await parentHandle.getFileHandle(oldName);
-    } catch (e) {
-        handle = await parentHandle.getDirectoryHandle(oldName);
-    }
-
-    // The 'move' method on a handle, when given one argument, renames it in place.
-    await (handle as any).move(newName);
-
-    // Update database transactionally
-    const oldPath = `${parentPath}/${oldName}`;
-    const newPath = `${parentPath}/${newName}`;
-    await updatePath(oldPath, newPath);
-}
-
-
-export async function deleteFiles(directoryHandle: FileSystemDirectoryHandle, filesToDelete: FileNode[]): Promise<void> {
-    const allowed = await verifyPermission(directoryHandle, true);
-    if (!allowed) {
-        throw new Error('Permission denied to delete files.');
-    }
-    for (const file of filesToDelete) {
-        // First, remove from database
-        if (file.isDirectory) {
-            // If it's a directory, remove all its descendants from the DB
-            await deleteDescendants(file.path);
+        const handle = await window.showDirectoryPicker();
+        await db.clearAllFiles();
+        return handle;
+    } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+            console.log('User cancelled the directory picker.');
+        } else {
+            console.error('Error opening directory:', error);
         }
-        await deleteFileNode(file.path);
-
-        // Then, remove from the actual file system
-        await directoryHandle.removeEntry(file.name, { recursive: file.isDirectory });
+        return null;
     }
 }
 
-export async function moveItems(sourceParentHandle: FileSystemDirectoryHandle, sourceParentPath: string, itemNames: string[], destHandle: FileSystemDirectoryHandle, destPath: string): Promise<void> {
-    const allowedSource = await verifyPermission(sourceParentHandle, true);
-    const allowedDest = await verifyPermission(destHandle, true);
-    if (!allowedSource || !allowedDest) throw new Error('Permission denied for move operation.');
-    
-    for (const itemName of itemNames) {
-        const oldPath = `${sourceParentPath}/${itemName}`;
-        const newPath = `${destPath}/${itemName}`;
-        
-        let handle: FileSystemHandle;
-        try {
-            handle = await sourceParentHandle.getFileHandle(itemName);
-        } catch(e) {
-            handle = await sourceParentHandle.getDirectoryHandle(itemName);
-        }
+export async function ingestDirectory(directoryHandle: FileSystemDirectoryHandle, parentPath: string | null = null) {
+    const path = parentPath ? `${parentPath}/${directoryHandle.name}` : directoryHandle.name;
 
-        // 1. Use the native move method, which is atomic.
-        await (handle as any).move(destHandle);
-
-        // 2. Update database transactionally
-        await updatePath(oldPath, newPath);
-    }
-}
-
-export async function applyOrganization(directoryHandle: FileSystemDirectoryHandle, suggestions: OrganizationSuggestion[], currentDirectoryPath: string): Promise<void> {
-    const allowed = await verifyPermission(directoryHandle, true);
-    if (!allowed) throw new Error('Permission denied to organize files.');
-
-    for (const suggestion of suggestions) {
-        const { folderName, fileNames } = suggestion;
-        if (!fileNames || fileNames.length === 0) continue;
-
-        try {
-            const folderHandle = await directoryHandle.getDirectoryHandle(folderName, { create: true });
-            const newFolderPath = `${currentDirectoryPath}/${folderName}`;
-            
-            // Create folder entry in DB
-            await addFile({
-                id: folderName,
-                name: folderName,
+    for await (const entry of directoryHandle.values()) {
+        const entryPath = `${path}/${entry.name}`;
+        if (entry.kind === 'file') {
+            const file = await entry.getFile();
+            const fileNode: StorableFileNode = {
+                id: entry.name,
+                name: entry.name,
+                isDirectory: false,
+                path: entryPath,
+                parentId: path,
+                size: file.size,
+                modified: file.lastModified,
+            };
+            await db.addFile(fileNode);
+        } else if (entry.kind === 'directory') {
+            const dirNode: StorableFileNode = {
+                id: entry.name,
+                name: entry.name,
                 isDirectory: true,
-                path: newFolderPath,
-                handle: folderHandle,
-                parentId: currentDirectoryPath,
+                path: entryPath,
+                parentId: path,
                 size: 0,
                 modified: Date.now(),
-            });
+            };
+            await db.addFile(dirNode);
+            await ingestDirectory(entry, path);
+        }
+    }
+}
 
-            // Move the files into the new folder using the new, efficient moveItems function
-            await moveItems(directoryHandle, currentDirectoryPath, fileNames, folderHandle, newFolderPath);
+export async function createDirectory(parentHandle: FileSystemDirectoryHandle, name: string) {
+    await parentHandle.getDirectoryHandle(name, { create: true });
+}
 
-        } catch (e) {
-            console.error(`Error processing folder "${folderName}":`, e);
-            throw new Error(`Failed to organize files into "${folderName}".`);
+export async function renameItem(parentHandle: FileSystemDirectoryHandle, target: FileNode, newName: string) {
+    if (target.isDirectory) {
+        throw new Error("Renaming directories via this method is not directly supported by the File System Access API. A move operation is required.");
+    } else {
+        const fileHandle = await parentHandle.getFileHandle(target.name);
+        const file = await fileHandle.getFile();
+        const newFileHandle = await parentHandle.getFileHandle(newName, { create: true });
+        const writable = await newFileHandle.createWritable();
+        await writable.write(file);
+        await writable.close();
+        await parentHandle.removeEntry(target.name);
+        await db.updatePath(target.path, target.path.replace(target.name, newName));
+    }
+}
+
+
+export async function deleteFiles(directoryHandle: FileSystemDirectoryHandle, filesToDelete: FileNode[]) {
+    for (const file of filesToDelete) {
+        await directoryHandle.removeEntry(file.name, { recursive: file.isDirectory });
+        if (file.isDirectory) {
+            await db.deleteDescendantsAndSelf(file.path);
+        } else {
+            await db.deleteFileNode(file.path);
+        }
+    }
+}
+
+export async function applyOrganization(directoryHandle: FileSystemDirectoryHandle, suggestions: OrganizationSuggestion[]) {
+    for (const suggestion of suggestions) {
+        const newFolderHandle = await directoryHandle.getDirectoryHandle(suggestion.folderName, { create: true });
+        for (const fileName of suggestion.fileNames) {
+            // This is a simplified move. A real implementation would need to copy and delete.
+            const fileHandle = await directoryHandle.getFileHandle(fileName);
+            const file = await fileHandle.getFile();
+            
+            const newFileHandle = await newFolderHandle.getFileHandle(fileName, { create: true });
+            const writable = await newFileHandle.createWritable();
+            await writable.write(file);
+            await writable.close();
+
+            await directoryHandle.removeEntry(fileName);
         }
     }
 }
 
 export async function readFileContent(handle: FileSystemFileHandle): Promise<string> {
-    const allowed = await verifyPermission(handle);
-    if (!allowed) throw new Error('Permission denied to read file.');
     const file = await handle.getFile();
     return file.text();
 }
 
 export async function saveFileContent(handle: FileSystemFileHandle, content: string): Promise<void> {
-    const allowed = await verifyPermission(handle, true);
-    if (!allowed) throw new Error('Permission denied to write to file.');
     const writable = await handle.createWritable();
     await writable.write(content);
     await writable.close();

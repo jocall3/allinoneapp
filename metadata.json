@@ -1,5 +1,5 @@
 {
-  "name": "filesd",
-  "description": "A modern file manager that uses the File System Access API to browse and manage local files. It leverages the Gemini API to provide intelligent suggestions for organizing your files and folders.",
+  "name": "Gemini AI File Manager",
+  "description": "A modern, browser-based file manager that leverages the Gemini API for intelligent file organization, search, and actions.",
   "requestFramePermissions": []
 }
