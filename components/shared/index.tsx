@@ -14,12 +14,12 @@ interface MarkdownRendererProps {
 }
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
-    // FIX: Remove TrustedHTML type as it's not available and string is sufficient for dangerouslySetInnerHTML.
     const [sanitizedHtml, setSanitizedHtml] = useState<string>('');
 
     useEffect(() => {
         const parse = async () => {
             if (content) {
+                // Basic sanitization to prevent obvious XSS, but a more robust library like DOMPurify would be better for production.
                 const html = await marked.parse(content);
                 setSanitizedHtml(html);
             } else {
@@ -31,7 +31,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
 
     return (
         <div
-            className="prose prose-sm max-w-none prose-headings:text-text-primary prose-p:text-text-primary prose-strong:text-text-primary prose-code:text-primary prose-code:before:content-none prose-code:after:content-none prose-pre:bg-gray-50 prose-pre:border prose-pre:border-border prose-pre:p-4 prose-pre:m-0"
+            className="prose prose-sm max-w-none"
             dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
         />
     );

@@ -1,9 +1,6 @@
-
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Type, FunctionDeclaration } from "@google/genai";
 import { getInferenceFunction, CommandResponse, FEATURE_TAXONOMY, logError } from '../../services/index';
-// FIX: Renamed useGlobalState to useAppContext
 import { useAppContext } from '../../contexts/GlobalStateContext';
 import { CommandLineIcon } from '../icons';
 import { LoadingSpinner } from '../shared/index';
@@ -61,7 +58,7 @@ const knowledgeBase = FEATURE_TAXONOMY.map(f => `- ${f.name} (${f.id}): ${f.desc
 const ExamplePromptButton: React.FC<{ text: string, onClick: (text: string) => void }> = ({ text, onClick }) => (
     <button
         onClick={() => onClick(text)}
-        className="px-3 py-1.5 bg-surface border border-border rounded-full text-xs hover:bg-gray-100 transition-colors"
+        className="px-3 py-1.5 bg-surface/80 border border-border rounded-full text-xs text-text-secondary hover:bg-surface-hover transition-colors"
     >
         {text}
     </button>
@@ -90,11 +87,9 @@ export const AiCommandCenter: React.FC<{ voiceCommand?: string }> = ({ voiceComm
 
                 switch (name) {
                     case 'navigateTo':
-                        // FIX: Dispatch the correct action type 'LAUNCH_FEATURE' instead of the obsolete 'SET_VIEW'.
                         dispatch({ type: 'LAUNCH_FEATURE', payload: { featureId: args.featureId }});
                         break;
                     case 'runFeatureWithInput':
-                         // FIX: Dispatch the correct action type 'LAUNCH_FEATURE' instead of the obsolete 'SET_VIEW'.
                          dispatch({ type: 'LAUNCH_FEATURE', payload: { featureId: args.featureId, props: args.props } });
                         break;
                     default:
@@ -129,6 +124,7 @@ export const AiCommandCenter: React.FC<{ voiceCommand?: string }> = ({ voiceComm
     
     const handleExampleClick = (text: string) => {
         setPrompt(text);
+        handleCommand(text);
     }
 
     return (
@@ -143,7 +139,7 @@ export const AiCommandCenter: React.FC<{ voiceCommand?: string }> = ({ voiceComm
             
             <div className="flex-grow flex flex-col justify-end max-w-3xl w-full mx-auto">
                 {lastResponse && (
-                    <div className="mb-4 p-4 bg-surface rounded-lg text-text-primary border border-border">
+                    <div className="mb-4 p-4 bg-surface/50 rounded-lg text-text-primary border border-border">
                         <p><strong>AI:</strong> {lastResponse}</p>
                     </div>
                 )}
@@ -154,7 +150,7 @@ export const AiCommandCenter: React.FC<{ voiceCommand?: string }> = ({ voiceComm
                         onKeyDown={handleKeyDown}
                         disabled={isLoading}
                         placeholder='Try "explain this code: const a = 1;" or "open the theme designer"'
-                        className="w-full p-4 pr-28 rounded-lg bg-surface border border-border focus:ring-2 focus:ring-primary focus:outline-none resize-none shadow-sm"
+                        className="w-full p-4 pr-28 rounded-lg bg-surface/80 border border-border focus:ring-2 focus:ring-primary focus:outline-none resize-none shadow-sm"
                         rows={2}
                     />
                     <button

@@ -11,7 +11,8 @@ import {
     CpuChipIcon, FolderIcon, MagnifyingGlassIcon, SparklesIcon, EyeIcon, MapIcon, BeakerIcon, CommandLineIcon,
     LockClosedIcon, CodeBracketSquareIcon, PhotoIcon, ChartBarIcon, BugAntIcon, ServerStackIcon, CloudIcon,
     PaperAirplaneIcon, ShieldCheckIcon, ArrowPathIcon, RectangleGroupIcon, MusicalNoteIcon, VideoCameraIcon,
-    DocumentTextIcon, PaintBrushIcon, PuzzlePieceIcon, MicrophoneIcon,
+    DocumentTextIcon, 
+    PaintBrushIcon, PuzzlePieceIcon, MicrophoneIcon,
     ArchiveBoxIcon,
     PencilIcon,
     GitBranchIcon,
@@ -25,7 +26,6 @@ import {
     MoonIcon,
     Cog6ToothIcon,
     BookOpenIcon,
-    // FIX: Add new icons for the 50 new features
     BuildingStorefrontIcon,
     CloudArrowUpIcon,
     MicroscopeIcon,
@@ -34,7 +34,6 @@ import {
     PresentationChartBarIcon
 } from './components/icons.tsx';
 
-// FIX: Add APP_TITLE export for AiStoryScaffolding feature
 export const APP_TITLE = "AI Story Scaffolding Studio";
 
 export const CHROME_VIEW_IDS = ['features-list'] as const;
@@ -55,7 +54,6 @@ export const FEATURE_CATEGORIES = [
     'Collaborative & Sharing',
     'Advanced Generative Capabilities',
     'Ethical AI & User Control',
-    // FIX: Added 5 new categories for the new features.
     'Enterprise & DevOps',
     'Advanced Code & Architecture',
     'Business & Product',
@@ -77,6 +75,9 @@ interface RawFeature {
 export const RAW_FEATURES: RawFeature[] = [
     // Add the new OmniStruct Framework as a feature
     { id: "omnistruct-framework", name: "OmniStruct Framework", description: "Define, manage, and interact with enterprise-grade project structures.", icon: React.createElement(ServerStackIcon), category: "System & Integration" },
+    
+    // Add the new Alchemy Studio feature
+    { id: "alchemy-studio", name: "Alchemy Studio", description: "The Alchemist's workshop. Compile and run TSAL code.", icon: React.createElement(BeakerIcon), category: "System & Integration" },
 
     // Add the new Story Scaffolding App as a feature
     { id: "ai-story-scaffolding", name: "AI Story Scaffolding", description: "Interactive AI-powered story creation studio.", icon: React.createElement(BookOpenIcon), category: "Advanced Generative Capabilities" },
@@ -212,6 +213,7 @@ export const RAW_FEATURES: RawFeature[] = [
     { id: "generate-marketing-copy", name: "Generate Marketing Copy", description: "Provide a product description, and AI generates marketing copy.", icon: React.createElement(DocumentTextIcon), category: "Productivity & Workflow" },
 
     // Category 6: System & Integration
+    { id: "project-dissertations", name: "Project Dissertations", description: "Read the lore and technical design papers behind the DevCore AI project.", icon: React.createElement(BookOpenIcon), category: "System & Integration" },
     { id: "connections", name: "Connections", description: "Connect to GitHub, Hugging Face, and other services.", icon: React.createElement(ConnectionsIcon), category: "System & Integration" },
     { id: "visual-git-tree", name: "Visual Git Tree", description: "Visually trace your git commit history with an interactive graph and an AI-powered summary.", icon: React.createElement(GitLogAnalyzerIcon), category: "System & Integration" },
     { id: "changelog-generator", name: "AI Changelog Generator", description: "Auto-build changelogs from raw git logs.", icon: React.createElement(ChangelogGeneratorIcon), category: "System & Integration" },
@@ -271,7 +273,7 @@ export const RAW_FEATURES: RawFeature[] = [
     { id: "whats-taking-up-space-analysis", name: "What's Taking Up Space?", description: "AI provides a detailed breakdown of disk space usage.", icon: React.createElement(ChartBarIcon), category: "Advanced File System Operations" },
     { id: "optimize-storage-for-project", name: "Optimize Storage for Project", description: "AI analyzes a project folder and suggests ways to optimize its storage footprint.", icon: React.createElement(FolderIcon), category: "Advanced File System Operations" },
     { id: "ai-driven-file-system-performance-benchmarking", name: "AI File System Benchmarking", description: "AI can run benchmarks on file system operations and suggest optimizations.", icon: React.createElement(CpuChipIcon), category: "Advanced File System Operations" },
-    { id: "automated-file-system-defragmentation-logical", name: "Automated Logical Defragmentation", description: "AI logically reorganizes files on disk to improve access times.", icon: React.createElement(ServerStackIcon), category: "Advanced File System Operations" },
+    { id: "automated-logical-defragmentation-logical", name: "Automated Logical Defragmentation", description: "AI logically reorganizes files on disk to improve access times.", icon: React.createElement(ServerStackIcon), category: "Advanced File System Operations" },
 
     // Category 10: Collaborative & Sharing
     { id: "ai-driven-collaborative-document-editing", name: "AI Collaborative Document Editing", description: "AI suggests improvements, clarifies ambiguities, or identifies conflicts in shared documents.", icon: React.createElement(DocumentTextIcon), category: "Collaborative & Sharing" },
@@ -310,7 +312,6 @@ export const RAW_FEATURES: RawFeature[] = [
     { id: "automated-ai-model-explainability-reports", name: "AI Model Explainability Reports", description: "AI generates reports explaining the internal workings of its models.", icon: React.createElement(CodeExplainerIcon), category: "Ethical AI & User Control" },
     { id: "ai-powered-ethical-dilemma-simulator", name: "AI Ethical Dilemma Simulator", description: "AI can simulate ethical dilemmas related to its own use cases.", icon: React.createElement(BugAntIcon), category: "Ethical AI & User Control" },
     
-    // FIX: Add 50 new features
     // Enterprise & DevOps
     { id: "ai-incident-post-mortem-generator", name: "AI Incident Post-mortem Generator", description: "Input incident details, get a blame-free post-mortem.", icon: React.createElement(DocumentTextIcon), category: "Enterprise & DevOps" },
     { id: "terraform-iac-generator", name: "Terraform/IaC Generator", description: "Describe infrastructure, get HCL code.", icon: React.createElement(CloudArrowUpIcon), category: "Enterprise & DevOps" },
@@ -342,7 +343,6 @@ export const RAW_FEATURES: RawFeature[] = [
     { id: "product-roadmap-generator", name: "Product Roadmap Generator", description: "Input goals and features, AI creates a visual roadmap.", icon: React.createElement(MapIcon), category: "Business & Product" },
     { id: "swot-analysis-generator", name: "SWOT Analysis Generator", description: "Describe a product, AI generates a SWOT analysis.", icon: React.createElement(ChartBarIcon), category: "Business & Product" },
     { id: "press-release-writer", name: "Press Release Writer", description: "Input launch details, AI writes a professional press release.", icon: React.createElement(NewspaperIcon), category: "Business & Product" },
-    // FIX: Replaced PresentationIcon with PresentationChartBarIcon to resolve a reference error.
     { id: "investor-pitch-deck-outline", name: "Investor Pitch Deck Outline", description: "Input a business idea, AI creates a pitch deck structure.", icon: React.createElement(PresentationChartBarIcon), category: "Business & Product" },
     { id: "market-sizing-estimator", name: "Market Sizing Estimator", description: "Describe a product, AI provides a rough TAM/SAM/SOM estimation.", icon: React.createElement(ChartBarIcon), category: "Business & Product" },
     { id: "gtm-strategy-brainstormer", name: "GTM Strategy Brainstormer", description: "Input a product, AI brainstorms go-to-market strategies.", icon: React.createElement(SparklesIcon), category: "Business & Product" },

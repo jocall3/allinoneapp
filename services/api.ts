@@ -367,7 +367,7 @@ export const debugFromErrorLog = (errorLog: string) =>
     streamContent(`Perform a root cause analysis on the following error log and suggest a fix. Log:\n${errorLog}`, "You are an AI debugging expert.");
 
 export const searchCodeSemantically = (query: string, codeSnippets: string) =>
-    streamContent(`Search for code snippets based on the query "${query}" from the following code base:\n${codeSnippets}`, "You are a semantic code search engine.");
+    streamContent(`Search for code snippets based on their functionality or intent from the following code base:\n${codeSnippets}`, "You are a semantic code search engine.");
     
 export const generateApiClient = (apiSpec: string) =>
     streamContent(`Generate a type-safe API client in TypeScript from the following OpenAPI/Swagger specification:\n${apiSpec}`, "You are an API client generator.");

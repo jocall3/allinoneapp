@@ -1,7 +1,5 @@
 import React from 'react';
-// FIX: Renamed useGlobalState to useAppContext to match the export.
 import { useAppContext } from '../contexts/GlobalStateContext.tsx';
-// FIX: Import aliased function to resolve export conflict
 import { clearAllGeneratedFiles } from '../services/index.ts';
 import { useLocalStorage } from '../hooks/useLocalStorage.ts';
 import { ALL_FEATURES } from './features/index.ts';
@@ -13,7 +11,7 @@ const ToggleSwitch: React.FC<{ checked: boolean, onChange: () => void }> = ({ ch
             role="switch"
             aria-checked={checked}
             onClick={onChange}
-            className={`${checked ? 'bg-primary' : 'bg-gray-300'} relative inline-flex h-6 w-11 items-center rounded-full transition-colors`}
+            className={`${checked ? 'bg-primary' : 'bg-surface-hover'} relative inline-flex h-6 w-11 items-center rounded-full transition-colors`}
         >
             <span className={`${checked ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition-transform`} />
         </button>
@@ -28,7 +26,6 @@ export const SettingsView: React.FC = () => {
 
     const handleClearGeneratedFiles = async () => {
         if (window.confirm("Are you sure you want to delete all AI-generated files? This cannot be undone.")) {
-            // FIX: Use aliased function to avoid ambiguity
             await clearAllGeneratedFiles();
             alert("Generated files cleared.");
         }
@@ -59,28 +56,26 @@ export const SettingsView: React.FC = () => {
             </header>
 
             <div className="p-4 sm:p-6 lg:p-8 space-y-8 max-w-4xl mx-auto w-full">
-                {/* Appearance Section */}
                 <section>
                     <h2 className="text-2xl font-bold border-b border-border pb-2 mb-4">Appearance</h2>
-                    <div className="flex items-center justify-between p-4 bg-surface border border-border rounded-lg">
+                    <div className="flex items-center justify-between p-4 bg-surface/50 border border-border rounded-lg">
                         <span className="font-medium">Theme</span>
                         <p className="text-sm text-text-secondary">
-                            Light mode is enforced in the current version.
+                            Dark mode is enforced in the current version.
                         </p>
                     </div>
                 </section>
                 
-                 {/* Feature Visibility Section */}
-                <section>
+                 <section>
                     <h2 className="text-2xl font-bold border-b border-border pb-2 mb-4">Feature Visibility</h2>
                      <p className="text-sm text-text-secondary mb-4">
-                        Hide or show features in the main sidebar. This does not disable them; they can still be accessed via the AI Command Center.
+                        Hide or show features in the main sidebar and dock. This does not disable them; they can still be accessed via the AI Command Center.
                     </p>
                     <div className="space-y-2">
                         {ALL_FEATURES.filter(f => f.id !== 'ai-command-center' && f.id !== 'settings').map(feature => {
                             const isVisible = !state.hiddenFeatures.includes(feature.id);
                             return (
-                                <div key={feature.id} className="flex items-center justify-between p-4 bg-surface border border-border rounded-lg">
+                                <div key={feature.id} className="flex items-center justify-between p-4 bg-surface/50 border border-border rounded-lg">
                                     <div>
                                         <p className="font-medium">{feature.name}</p>
                                         <p className="text-sm text-text-secondary">{feature.description}</p>
@@ -95,44 +90,42 @@ export const SettingsView: React.FC = () => {
                     </div>
                 </section>
                 
-                {/* Data Management Section */}
                 <section>
                     <h2 className="text-2xl font-bold border-b border-border pb-2 mb-4">Data Management</h2>
                     <div className="space-y-4">
-                         <div className="flex items-center justify-between p-4 bg-surface border border-border rounded-lg">
+                         <div className="flex items-center justify-between p-4 bg-surface/50 border border-border rounded-lg">
                              <div>
                                 <p className="font-medium">Clear Generated Files</p>
                                 <p className="text-sm text-text-secondary">Removes all files created by the AI Feature Builder.</p>
                              </div>
-                             <button onClick={handleClearGeneratedFiles} className="flex items-center gap-2 px-4 py-2 rounded-md bg-red-500/10 text-red-600 hover:bg-red-500/20 transition-colors">
+                             <button onClick={handleClearGeneratedFiles} className="flex items-center gap-2 px-4 py-2 rounded-md bg-danger/10 text-danger hover:bg-danger/20 transition-colors">
                                 <TrashIcon /> Clear
                              </button>
                          </div>
-                         <div className="flex items-center justify-between p-4 bg-surface border border-border rounded-lg">
+                         <div className="flex items-center justify-between p-4 bg-surface/50 border border-border rounded-lg">
                              <div>
                                 <p className="font-medium">Clear Snippet Vault</p>
                                 <p className="text-sm text-text-secondary">Removes all saved code snippets.</p>
                              </div>
-                             <button onClick={handleClearSnippets} className="flex items-center gap-2 px-4 py-2 rounded-md bg-red-500/10 text-red-600 hover:bg-red-500/20 transition-colors">
+                             <button onClick={handleClearSnippets} className="flex items-center gap-2 px-4 py-2 rounded-md bg-danger/10 text-danger hover:bg-danger/20 transition-colors">
                                 <TrashIcon /> Clear
                              </button>
                          </div>
-                         <div className="flex items-center justify-between p-4 bg-surface border border-border rounded-lg">
+                         <div className="flex items-center justify-between p-4 bg-surface/50 border border-border rounded-lg">
                              <div>
                                 <p className="font-medium">Clear Notes & Moodboard</p>
                                 <p className="text-sm text-text-secondary">Removes all items from Dev Notes and Moodboard.</p>
                              </div>
-                             <button onClick={handleClearNotes} className="flex items-center gap-2 px-4 py-2 rounded-md bg-red-500/10 text-red-600 hover:bg-red-500/20 transition-colors">
+                             <button onClick={handleClearNotes} className="flex items-center gap-2 px-4 py-2 rounded-md bg-danger/10 text-danger hover:bg-danger/20 transition-colors">
                                 <TrashIcon /> Clear
                              </button>
                          </div>
                     </div>
                 </section>
 
-                {/* About Section */}
                 <section>
                     <h2 className="text-2xl font-bold border-b border-border pb-2 mb-4">About</h2>
-                     <div className="p-4 bg-surface border border-border rounded-lg text-text-secondary">
+                     <div className="p-4 bg-surface/50 border border-border rounded-lg text-text-secondary">
                         <p><strong>DevCore AI Toolkit</strong></p>
                         <p>Version 2.0.0 (Desktop Environment)</p>
                         <p>Created by James Burvel O'Callaghan III for Citibank Demo Business Inc Powered by Google Gemini</p>

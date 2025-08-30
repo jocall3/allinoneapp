@@ -5,7 +5,6 @@ import { FeatureDock } from './FeatureDock.tsx';
 import { ALL_FEATURES } from '../features/index.ts';
 import type { Feature } from '../../types.ts';
 
-// FIX: Update WindowState to include featureId and optional props.
 interface WindowState {
   id: string;
   featureId: string;
@@ -36,9 +35,8 @@ export const DesktopView: React.FC<DesktopViewProps> = ({ windows, activeId, onL
     return (
         <div className="h-full flex flex-col bg-transparent relative">
             <FeatureDock onOpen={onLaunch} />
-            <div className="flex-grow relative overflow-hidden pt-60"> {/* Added padding top for the dock */}
-                {/* Desktop Background - can be customized later */}
-                <div className="absolute inset-0 bg-gray-800 bg-grid-gray-700/[0.2]"></div>
+            <div className="flex-grow relative overflow-hidden pt-24">
+                <div className="absolute inset-0 bg-grid"></div>
                 
                 {openWindows.map(win => {
                     const feature = featuresMap.get(win.featureId);
@@ -46,7 +44,6 @@ export const DesktopView: React.FC<DesktopViewProps> = ({ windows, activeId, onL
                     return (
                         <Window
                             key={win.id}
-                            feature={feature}
                             state={win}
                             isActive={win.id === activeId}
                             onClose={() => onClose(win.id)}

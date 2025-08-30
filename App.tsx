@@ -1,19 +1,15 @@
-
-
 import React, { Suspense, useCallback, useState, useEffect } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAppContext } from './contexts/GlobalStateContext';
 import { ALL_FEATURES } from './components/features';
-import type { Feature } from './types';
 import { LeftSidebar } from './components/LeftSidebar';
 import { CommandPalette } from './components/CommandPalette';
 import { VoiceCommandModal } from './components/VoiceCommandModal';
 import { DesktopView } from './components/desktop/DesktopView';
 import { Alchemist } from './alchemy/alchemist/compiler';
 import exampleTsal from './alchemy/example.tsal?raw';
+import { ActionManager } from './components/ActionManager';
 
-// FIX: Added a new WindowState interface to manage the state of each open window in the new desktop environment.
-// FIX: Added optional props to window state to support features launched with initial data.
 interface WindowState {
   id: string;
   featureId: string;
@@ -25,26 +21,22 @@ interface WindowState {
 }
 
 const Z_INDEX_BASE = 10;
-const featuresMap = new Map(ALL_FEATURES.map(f => [f.id, f]));
 
 export const App: React.FC = () => {
   const { state, dispatch } = useAppContext();
   const { isVoiceCommanderOpen, launchRequest } = state;
   const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
   
-  // FIX: State management for the desktop environment is now centralized in App.tsx.
   const [windows, setWindows] = useState<Record<string, WindowState>>({});
   const [activeId, setActiveId] = useState<string | null>(null);
   const [nextZIndex, setNextZIndex] = useState(Z_INDEX_BASE);
 
-  // --- Alchemy Engine Initialization & Proof-of-Concept ---
   useEffect(() => {
     const runAlchemyProofOfConcept = async () => {
         console.log("🔥 Initializing Alchemist Engine...");
         const alchemist = new Alchemist();
         try {
             console.log("Compiling example.tsal...");
-            // FIX: The `compile` method returns an object containing the instance.
             const compilationResult = await alchemist.compile(exampleTsal);
             console.log("✅ Compilation successful. Instance:", compilationResult.instance);
             
@@ -68,42 +60,26 @@ export const App: React.FC = () => {
     runAlchemyProofOfConcept();
   }, []);
 
-
-  // FIX: New function to handle launching features in new windows. This replaces the old navigation logic.
-  // FIX: Updated to accept optional props for the feature component.
   const handleLaunchFeature = useCallback((featureId: string, props?: any) => {
     const newZIndex = nextZIndex + 1;
     setNextZIndex(newZIndex);
-    setActiveId(featureId);
+    const newWindowId = `${featureId}-${Date.now()}`;
+    setActiveId(newWindowId);
 
     setWindows(prev => {
-        const existingWindow = prev[featureId];
-        if (existingWindow) {
-            // If window exists, bring it to front and un-minimize it
-            return {
-                ...prev,
-                [featureId]: {
-                    ...existingWindow,
-                    isMinimized: false,
-                    zIndex: newZIndex,
-                    props: props || existingWindow.props, // Update props if provided
-                }
-            };
-        }
-        
         const openWindowsCount = Object.values(prev).filter(w => !w.isMinimized).length;
         const newWindow: WindowState = {
-            id: featureId,
+            id: newWindowId,
             featureId: featureId,
             position: { x: 100 + openWindowsCount * 30, y: 50 + openWindowsCount * 30 },
-            size: { width: 800, height: 600 },
+            size: { width: 900, height: 700 },
             zIndex: newZIndex,
             isMinimized: false,
             props: props,
         };
-        return { ...prev, [featureId]: newWindow };
+        return { ...prev, [newWindowId]: newWindow };
     });
-    setCommandPaletteOpen(false); // Close palette after launching
+    setCommandPaletteOpen(false);
   }, [nextZIndex]);
 
 
@@ -133,7 +109,6 @@ export const App: React.FC = () => {
       setWindows(prev => ({ ...prev, [id]: { ...prev[id], ...updates } }));
   };
 
-  // FIX: Add an effect to handle feature launch requests from the global state.
   useEffect(() => {
     if (launchRequest) {
         handleLaunchFeature(launchRequest.featureId, launchRequest.props);
@@ -156,7 +131,6 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [dispatch]);
   
-  // FIX: The main component structure is now a flexible desktop environment.
   return (
     <ErrorBoundary>
       <div className="w-screen h-screen bg-background text-text-primary flex font-sans antialiased overflow-hidden">
@@ -171,6 +145,7 @@ export const App: React.FC = () => {
                 onFocus={handleFocusWindow}
                 onUpdate={handleUpdateWindow}
             />
+            <ActionManager />
         </main>
         <CommandPalette isOpen={isCommandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} onSelect={handleLaunchFeature} />
         <VoiceCommandModal isOpen={isVoiceCommanderOpen} />

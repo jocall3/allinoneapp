@@ -52,13 +52,13 @@ export const AiCodingChallenge: React.FC = () => {
                     {isLoading ? <LoadingSpinner /> : 'Generate New Challenge'}
                 </button>
             </header>
-            <div className="flex-grow p-4 bg-surface border border-border rounded-md overflow-y-auto">
+            <div className="flex-grow p-4 bg-surface/50 border border-border rounded-md overflow-y-auto">
                 {isLoading && (
                      <div className="flex items-center justify-center h-full">
                         <LoadingSpinner />
                      </div>
                 )}
-                {error && <p className="text-red-500">{error}</p>}
+                {error && <p className="text-danger">{error}</p>}
                 {challenge && !isLoading && (
                     <MarkdownRenderer content={challenge} />
                 )}

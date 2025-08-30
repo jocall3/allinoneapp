@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAppContext } from '../contexts/GlobalStateContext';
 import { initializeOctokit, validateToken } from '../services';
@@ -24,7 +23,6 @@ export const LoginView: React.FC = () => {
             const user: User = await validateToken(tokenInput);
             initializeOctokit(tokenInput);
             dispatch({ type: 'SET_GITHUB_TOKEN', payload: { token: tokenInput, user } });
-            // The component will unmount on success as the main App re-renders
         } catch (err) {
             setError(err instanceof Error ? `Invalid Token: ${err.message}` : 'An unknown error occurred.');
             setStatus('error');
@@ -35,7 +33,7 @@ export const LoginView: React.FC = () => {
 
     return (
         <div className="h-screen w-screen flex items-center justify-center bg-background text-text-primary font-sans">
-            <div className="bg-surface p-8 sm:p-12 rounded-2xl shadow-2xl text-center border border-border max-w-lg m-4">
+            <div className="bg-surface/50 backdrop-blur-xl p-8 sm:p-12 rounded-2xl shadow-2xl text-center border border-border max-w-lg m-4 animate-scale-in">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary mx-auto mb-4">
                     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
@@ -52,13 +50,13 @@ export const LoginView: React.FC = () => {
                             onChange={(e) => setTokenInput(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleConnect()}
                             placeholder="ghp_..."
-                            className="flex-grow p-2 bg-background border border-border rounded-md text-sm"
+                            className="flex-grow p-2 bg-background/50 border border-border rounded-md text-sm focus:ring-2 focus:ring-primary focus:outline-none"
                         />
                          <button onClick={handleConnect} disabled={status === 'loading'} className="btn-primary px-6 py-2 flex items-center justify-center min-w-[120px]">
                             {status === 'loading' ? <LoadingSpinner /> : 'Connect'}
                         </button>
                     </div>
-                    {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
+                    {error && <p className="text-danger text-xs mt-2">{error}</p>}
                     <p className="text-xs text-text-secondary mt-2">
                         Your token is stored only in your browser's local storage. Required scopes: `repo`, `read:user`.
                     </p>

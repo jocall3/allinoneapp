@@ -57,9 +57,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-900/80 backdrop-blur-sm z-50 flex items-start justify-center pt-20" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center pt-[15vh]" onClick={onClose}>
       <div
-        className="w-full max-w-xl bg-surface border border-border rounded-lg shadow-2xl overflow-hidden"
+        className="w-full max-w-2xl bg-surface/80 backdrop-blur-xl border border-border rounded-lg shadow-2xl overflow-hidden animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         <input
@@ -68,7 +68,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           autoFocus
-          className="w-full p-4 bg-surface text-text-primary text-lg focus:outline-none border-b border-border"
+          className="w-full p-4 bg-transparent text-text-primary text-lg focus:outline-none border-b border-border"
         />
         <ul className="max-h-96 overflow-y-auto p-2">
           {commandOptions.length > 0 ? (
@@ -79,14 +79,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
                    onSelect(item.id);
                 }}
                 className={`flex items-center justify-between p-3 rounded-md cursor-pointer ${
-                  selectedIndex === index ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100'
+                  selectedIndex === index ? 'bg-primary/20 text-primary' : 'hover:bg-surface-hover'
                 }`}
               >
                 <div className="flex items-center space-x-3">
-                    <div className="text-text-secondary">{item.icon}</div>
+                    <div className="text-primary">{item.icon}</div>
                     <span className="text-text-primary">{item.name}</span>
                 </div>
-                <span className="text-xs text-text-secondary bg-gray-100 px-2 py-1 rounded">{item.category}</span>
+                <span className="text-xs text-text-secondary bg-surface px-2 py-1 rounded">{item.category}</span>
               </li>
             ))
           ) : (

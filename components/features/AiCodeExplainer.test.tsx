@@ -12,7 +12,8 @@ vi.mock('../../services/index', async () => {
   };
 });
 
-const mockExplainCodeStructured = services.explainCodeStructured as vi.Mock;
+// FIX: Replaced type casting with `vi.mocked()` to correctly type the mocked function and resolve the 'vi' namespace error.
+const mockExplainCodeStructured = vi.mocked(services.explainCodeStructured);
 
 describe('AiCodeExplainer', () => {
   it('renders the component with example code', () => {

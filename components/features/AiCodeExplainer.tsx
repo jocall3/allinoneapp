@@ -24,10 +24,10 @@ const simpleSyntaxHighlight = (code: string) => {
         .replace(/>/g, '&gt;');
 
     return escapedCode
-        .replace(/\b(const|let|var|function|return|if|for|=>|import|from|export|default)\b/g, '<span class="text-indigo-600 font-semibold">$1</span>')
-        .replace(/(\`|'|")(.*?)(\`|'|")/g, '<span class="text-emerald-700">$1$2$3</span>')
-        .replace(/(\/\/.*)/g, '<span class="text-gray-500 italic">$1</span>')
-        .replace(/(\{|\}|\(|\)|\[|\])/g, '<span class="text-gray-600">$1</span>');
+        .replace(/\b(const|let|var|function|return|if|for|=>|import|from|export|default)\b/g, '<span class="text-accent">$1</span>')
+        .replace(/(\`|'|")(.*?)(\`|'|")/g, '<span class="text-green-400">$1$2$3</span>')
+        .replace(/(\/\/.*)/g, '<span class="text-text-secondary/70 italic">$1</span>')
+        .replace(/(\{|\}|\(|\)|\[|\])/g, '<span class="text-text-secondary">$1</span>');
 };
 
 export const AiCodeExplainer: React.FC<{ initialCode?: string }> = ({ initialCode }) => {
@@ -84,7 +84,7 @@ export const AiCodeExplainer: React.FC<{ initialCode?: string }> = ({ initialCod
                 return (
                     <div className="space-y-3">
                         {explanation.lineByLine.map((item, index) => (
-                            <div key={index} className="p-3 bg-background rounded-md border border-border">
+                            <div key={index} className="p-3 bg-background/50 rounded-md border border-border">
                                 <p className="font-mono text-xs text-primary mb-1">Lines: {item.lines}</p>
                                 <p className="text-sm">{item.explanation}</p>
                             </div>
@@ -94,8 +94,8 @@ export const AiCodeExplainer: React.FC<{ initialCode?: string }> = ({ initialCod
             case 'complexity':
                 return (
                     <div>
-                        <p><strong>Time Complexity:</strong> <span className="font-mono text-amber-600">{explanation.complexity.time}</span></p>
-                        <p><strong>Space Complexity:</strong> <span className="font-mono text-amber-600">{explanation.complexity.space}</span></p>
+                        <p><strong>Time Complexity:</strong> <span className="font-mono text-warning">{explanation.complexity.time}</span></p>
+                        <p><strong>Space Complexity:</strong> <span className="font-mono text-warning">{explanation.complexity.space}</span></p>
                     </div>
                 );
             case 'suggestions':
@@ -118,8 +118,7 @@ export const AiCodeExplainer: React.FC<{ initialCode?: string }> = ({ initialCod
             </header>
             <div className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-6 min-h-0">
                 
-                {/* Left Column: Code Input */}
-                <div className="flex flex-col min-h-0 md:col-span-1">
+                <div className="flex flex-col min-h-0">
                     <label htmlFor="code-input" className="text-sm font-medium text-text-secondary mb-2">Your Code</label>
                     <div className="relative flex-grow bg-surface border border-border rounded-md focus-within:ring-2 focus-within:ring-primary overflow-hidden">
                         <textarea
@@ -150,21 +149,20 @@ export const AiCodeExplainer: React.FC<{ initialCode?: string }> = ({ initialCod
                     </div>
                 </div>
 
-                {/* Right Column: AI Analysis */}
-                <div className="flex flex-col min-h-0 md:col-span-1">
+                <div className="flex flex-col min-h-0">
                     <label className="text-sm font-medium text-text-secondary mb-2">AI Analysis</label>
-                    <div className="relative flex-grow flex flex-col bg-surface border border-border rounded-md overflow-hidden">
+                    <div className="relative flex-grow flex flex-col bg-surface/50 border border-border rounded-md overflow-hidden">
                         <div className="flex-shrink-0 flex border-b border-border">
                            {(['summary', 'lineByLine', 'complexity', 'suggestions'] as ExplanationTab[]).map(tab => (
                                <button key={tab} onClick={() => setActiveTab(tab)} disabled={!explanation}
-                                className={`px-4 py-2 text-sm font-medium capitalize transition-colors ${activeTab === tab ? 'bg-background text-primary font-semibold' : 'text-text-secondary hover:bg-gray-100 disabled:text-gray-400'}`}>
+                                className={`px-4 py-2 text-sm font-medium capitalize transition-colors ${activeTab === tab ? 'bg-background text-primary font-semibold border-b-2 border-primary' : 'text-text-secondary hover:bg-surface-hover disabled:text-text-secondary/50'}`}>
                                    {tab.replace(/([A-Z])/g, ' $1')}
                                </button>
                            ))}
                         </div>
                         <div className="p-4 flex-grow overflow-y-auto">
                             {isLoading && <div className="flex items-center justify-center h-full"><LoadingSpinner /></div>}
-                            {error && <p className="text-red-500">{error}</p>}
+                            {error && <p className="text-danger">{error}</p>}
                             {explanation && !isLoading && renderTabContent()}
                             {!isLoading && !explanation && !error && <div className="text-text-secondary h-full flex items-center justify-center">The analysis will appear here.</div>}
                         </div>

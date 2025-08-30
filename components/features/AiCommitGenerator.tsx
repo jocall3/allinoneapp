@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { generateCommitMessageStream, downloadFile } from '../../services/index.ts';
-import { GitBranchIcon, ArrowDownTrayIcon } from '../icons.tsx';
+import { generateCommitMessageStream } from '../../services/index.ts';
+import { GitBranchIcon } from '../icons.tsx';
 import { LoadingSpinner } from '../shared/index.tsx';
 
 const exampleDiff = `diff --git a/src/components/Button.tsx b/src/components/Button.tsx
@@ -56,10 +56,6 @@ export const AiCommitGenerator: React.FC<{ diff?: string }> = ({ diff: initialDi
     const handleCopy = () => {
         navigator.clipboard.writeText(message);
     };
-    
-    const handleDownload = () => {
-        downloadFile(message, 'commit_message.txt', 'text/plain');
-    };
 
     return (
         <div className="h-full flex flex-col p-4 sm:p-6 lg:p-8 text-text-primary">
@@ -70,47 +66,38 @@ export const AiCommitGenerator: React.FC<{ diff?: string }> = ({ diff: initialDi
                 </h1>
                 <p className="text-text-secondary mt-1">Paste your diff and let Gemini craft the perfect commit message.</p>
             </header>
-            <div className="flex-grow flex flex-col gap-4 min-h-0">
-                <div className="flex flex-col flex-1 min-h-0">
+            <div className="flex-grow grid grid-cols-1 lg:grid-cols-2 gap-6 h-full overflow-hidden">
+                <div className="flex flex-col h-full">
                     <label htmlFor="diff-input" className="text-sm font-medium text-text-secondary mb-2">Git Diff</label>
                     <textarea
                         id="diff-input"
                         value={diff}
                         onChange={(e) => setDiff(e.target.value)}
                         placeholder="Paste your git diff here..."
-                        className="flex-grow p-4 bg-surface border border-border rounded-md resize-none font-mono text-sm text-text-primary focus:ring-2 focus:ring-primary focus:outline-none"
+                        className="flex-grow p-4 bg-surface border border-border rounded-md resize-none font-mono text-sm text-text-secondary focus:ring-2 focus:ring-primary focus:outline-none"
                     />
-                </div>
-                <div className="flex-shrink-0">
-                    <button
+                     <button
                         onClick={() => handleGenerate(diff)}
                         disabled={isLoading}
-                        className="btn-primary w-full max-w-xs mx-auto flex items-center justify-center px-6 py-3"
+                        className="btn-primary mt-4 w-full flex items-center justify-center px-6 py-3"
                     >
                         {isLoading ? <LoadingSpinner /> : 'Generate Commit Message'}
                     </button>
                 </div>
-                <div className="flex flex-col flex-1 min-h-0">
-                    <div className="flex justify-between items-center mb-2">
-                        <label className="text-sm font-medium text-text-secondary">Generated Message</label>
-                        {message && !isLoading && (
-                            <div className="flex items-center gap-2">
-                                <button onClick={handleCopy} className="px-3 py-1 bg-gray-100 text-xs rounded-md hover:bg-gray-200">Copy</button>
-                                <button onClick={handleDownload} className="flex items-center gap-1 px-3 py-1 bg-gray-100 text-xs rounded-md hover:bg-gray-200">
-                                    <ArrowDownTrayIcon className="w-4 h-4" /> Download
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                    <div className="relative flex-grow p-4 bg-surface border border-border rounded-md overflow-y-auto">
-                        {isLoading && (
+                <div className="flex flex-col h-full">
+                    <label className="text-sm font-medium text-text-secondary mb-2">Generated Message</label>
+                    <div className="relative flex-grow p-4 bg-background border border-border rounded-md overflow-y-auto">
+                        {isLoading && !message && (
                              <div className="flex items-center justify-center h-full">
                                 <LoadingSpinner />
                              </div>
                         )}
-                        {error && <p className="text-red-500">{error}</p>}
-                        {message && !isLoading && (
-                           <pre className="whitespace-pre-wrap font-sans text-text-primary">{message}</pre>
+                        {error && <p className="text-danger">{error}</p>}
+                        {message && (
+                            <>
+                               <button onClick={handleCopy} className="absolute top-2 right-2 px-2 py-1 bg-surface-hover hover:bg-border rounded-md text-xs">Copy</button>
+                               <pre className="whitespace-pre-wrap font-sans text-text-primary">{message}</pre>
+                            </>
                         )}
                          {!isLoading && !message && !error && (
                             <div className="text-text-secondary h-full flex items-center justify-center">

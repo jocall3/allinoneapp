@@ -1,21 +1,20 @@
 import React, { Suspense, useRef } from 'react';
 import type { Feature } from '../../types.ts';
-import { FEATURES_MAP } from '../features/index.ts';
 import { LoadingSpinner } from '../shared/index.tsx';
 import { MinimizeIcon, XMarkIcon } from '../icons.tsx';
+import { FEATURES_MAP } from '../features/index.ts';
 
 interface WindowState {
   id: string;
+  featureId: string;
   position: { x: number; y: number };
   size: { width: number; height: number };
   zIndex: number;
   isMinimized: boolean;
-  // FIX: Add props to WindowState to support features launched with initial data.
   props?: any;
 }
 
 interface WindowProps {
-  feature: Feature;
   state: WindowState;
   isActive: boolean;
   onClose: (id: string) => void;
@@ -24,15 +23,16 @@ interface WindowProps {
   onUpdate: (id: string, updates: Partial<WindowState>) => void;
 }
 
-export const Window: React.FC<WindowProps> = ({ feature, state, isActive, onClose, onMinimize, onFocus, onUpdate }) => {
+export const Window: React.FC<WindowProps> = ({ state, isActive, onClose, onMinimize, onFocus, onUpdate }) => {
   const dragStartPos = useRef<{ x: number; y: number } | null>(null);
   const initialPos = useRef<{ x: number; y: number } | null>(null);
   
-  const FeatureComponent = FEATURES_MAP.get(feature.id)?.component;
+  const feature = FEATURES_MAP.get(state.featureId);
+  const FeatureComponent = feature?.component;
 
   const handleDragStart = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
-    onFocus(feature.id);
+    onFocus(state.id);
     dragStartPos.current = { x: e.clientX, y: e.clientY };
     initialPos.current = { x: state.position.x, y: state.position.y };
     window.addEventListener('mousemove', handleDragMove);
@@ -43,7 +43,7 @@ export const Window: React.FC<WindowProps> = ({ feature, state, isActive, onClos
     if (!dragStartPos.current || !initialPos.current) return;
     const dx = e.clientX - dragStartPos.current.x;
     const dy = e.clientY - dragStartPos.current.y;
-    onUpdate(feature.id, { position: { x: initialPos.current.x + dx, y: initialPos.current.y + dy }});
+    onUpdate(state.id, { position: { x: initialPos.current.x + dx, y: initialPos.current.y + dy }});
   };
 
   const handleDragEnd = () => {
@@ -53,9 +53,13 @@ export const Window: React.FC<WindowProps> = ({ feature, state, isActive, onClos
     window.removeEventListener('mouseup', handleDragEnd);
   };
   
+  if (!feature) {
+    return null; // or some error component
+  }
+
   return (
     <div
-      className={`absolute bg-slate-800/70 backdrop-blur-md border rounded-lg shadow-2xl shadow-black/50 flex flex-col transition-all duration-100 ${isActive ? 'border-cyan-500/50' : 'border-slate-700/50'}`}
+      className={`absolute bg-surface/60 backdrop-blur-xl border rounded-lg shadow-2xl shadow-black/50 flex flex-col transition-all duration-200 ${isActive ? 'border-primary/50 ring-2 ring-primary' : 'border-border/50'}`}
       style={{
         left: state.position.x,
         top: state.position.y,
@@ -64,29 +68,28 @@ export const Window: React.FC<WindowProps> = ({ feature, state, isActive, onClos
         zIndex: state.zIndex,
         visibility: state.isMinimized ? 'hidden' : 'visible',
       }}
-      onMouseDown={() => onFocus(feature.id)}
+      onMouseDown={() => onFocus(state.id)}
     >
       <header
-        className={`flex items-center justify-between h-8 px-2 border-b ${isActive ? 'bg-slate-700/50 border-slate-600' : 'bg-slate-800/50 border-slate-700'} rounded-t-lg cursor-move`}
+        className={`flex items-center justify-between h-8 px-2 border-b ${isActive ? 'bg-surface/50 border-border' : 'bg-surface/30 border-border/50'} rounded-t-lg cursor-move`}
         onMouseDown={handleDragStart}
       >
-        <div className="flex items-center gap-2 text-xs">
-           <div className="w-4 h-4">{feature.icon}</div>
+        <div className="flex items-center gap-2 text-xs text-text-primary">
+           <div className="w-4 h-4 text-primary">{feature.icon}</div>
            <span>{feature.name}</span>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={() => onMinimize(feature.id)} className="p-1 rounded hover:bg-slate-600"><MinimizeIcon /></button>
-          <button onClick={() => onClose(feature.id)} className="p-1 rounded hover:bg-red-500/50"><XMarkIcon className="w-4 h-4"/></button>
+          <button onClick={() => onMinimize(state.id)} className="p-1 rounded text-text-secondary hover:bg-white/10"><MinimizeIcon /></button>
+          <button onClick={() => onClose(state.id)} className="p-1 rounded text-text-secondary hover:bg-danger/50 hover:text-white"><XMarkIcon className="w-4 h-4"/></button>
         </div>
       </header>
-      <main className="flex-1 overflow-auto bg-slate-800/50 rounded-b-lg">
+      <main className="flex-1 overflow-auto bg-background/50 rounded-b-lg">
         {FeatureComponent ? (
           <Suspense fallback={<div className="w-full h-full flex items-center justify-center"><LoadingSpinner/></div>}>
-            {/* FIX: Pass props from window state to the feature component. */}
-            <FeatureComponent {...state.props} />
+            <FeatureComponent feature={feature} {...state.props} />
           </Suspense>
         ) : (
-            <div className="p-4 text-red-400">Error: Component not found for {feature.name}</div>
+            <div className="p-4 text-danger">Error: Component not found for {feature.name}</div>
         )}
       </main>
     </div>
