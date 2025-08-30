@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview A functional, simplified memory manager for the TSAL runtime.
  * This provides a concrete implementation of a bump allocator for the `heap` module.

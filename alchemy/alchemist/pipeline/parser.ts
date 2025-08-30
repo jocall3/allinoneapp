@@ -1,124 +1,164 @@
+
 /**
  * @fileoverview The Parser for the TSAL language.
- * This implementation uses a Pratt parser (top-down operator precedence parser),
- * which is excellent for handling expressions with different precedence levels.
- * It takes tokens from the Lexer and constructs an Abstract Syntax Tree (AST).
+ * This implementation uses a recursive descent parser, which is straightforward
+ * for the defined TSAL grammar. It takes tokens from the Lexer and constructs an
+ * Abstract Syntax Tree (AST).
  */
 
 import { Token, TokenType } from './lexer';
 import * as AST from '../../tsal/syntax/ast';
 
-type PrefixParselet = (token: Token) => AST.ExpressionNode;
-type InfixParselet = (left: AST.ExpressionNode, token: Token) => AST.ExpressionNode;
-
-enum Precedence {
-    LOWEST,
-    SUM,     // + -
-    PRODUCT, // * /
-    CALL,    // myFunc()
-}
-
-const PRECEDENCES: Partial<Record<TokenType, Precedence>> = {
-    [TokenType.Plus]: Precedence.SUM,
-    [TokenType.Minus]: Precedence.SUM,
-    [TokenType.Star]: Precedence.PRODUCT,
-    [TokenType.Slash]: Precedence.PRODUCT,
-    [TokenType.OpenParen]: Precedence.CALL,
-};
-
 export class Parser {
     private tokens: Token[];
     private position: number = 0;
-    private prefixParselets: Map<TokenType, PrefixParselet> = new Map();
-    private infixParselets: Map<TokenType, InfixParselet> = new Map();
 
     constructor(tokens: Token[]) {
         this.tokens = tokens;
-        this.registerParselets();
-    }
-
-    private registerParselets() {
-        // Register prefix parselets for literals and identifiers
-        this.prefixParselets.set(TokenType.Identifier, this.parseIdentifier.bind(this));
-        this.prefixParselets.set(TokenType.IntegerLiteral, this.parseIntegerLiteral.bind(this));
-        
-        // Register infix parselets for binary operators
-        this.registerInfix(TokenType.Plus, Precedence.SUM);
-        this.registerInfix(TokenType.Minus, Precedence.SUM);
-        this.registerInfix(TokenType.Star, Precedence.PRODUCT);
-        this.registerInfix(TokenType.Slash, Precedence.PRODUCT);
-    }
-
-    private registerInfix(type: TokenType, precedence: Precedence) {
-        this.infixParselets.set(type, (left, token) => {
-            const right = this.parseExpression(precedence);
-            return { type: 'BinaryExpression', operator: token.value, left, right };
-        });
     }
 
     public parse(): AST.ProgramNode {
-        const programNode: AST.ProgramNode = {
-            type: 'Program',
-            body: []
-        };
-
+        const programNode: AST.ProgramNode = { type: 'Program', body: [] };
         while (!this.isAtEnd()) {
-            // For now, assume all we have are simple expressions for testing
-            // A full implementation would have a `parseStatement` or `parseDeclaration` here.
-            // This is just a placeholder to consume tokens.
-             this.advance();
+            programNode.body.push(this.parseTopLevelDeclaration());
         }
-
-        console.log("[Parser] Finished parsing. A full implementation would build a complete AST for declarations and statements.");
         return programNode;
     }
 
-    public parseExpression(precedence: Precedence = Precedence.LOWEST): AST.ExpressionNode {
-        const token = this.advance();
-        const prefix = this.prefixParselets.get(token.type);
-
-        if (!prefix) {
-            throw new Error(`Parser Error: No prefix parselet found for token type ${token.type}`);
+    private parseTopLevelDeclaration(): AST.TopLevelNode {
+        let isExported = false;
+        if (this.match(TokenType.Export)) {
+            isExported = true;
         }
+        if (this.check(TokenType.Func)) {
+            return this.parseFunctionDeclaration(isExported);
+        }
+        throw this.error("Expected 'export' or 'func' at top level.");
+    }
 
-        let left = prefix(token);
+    private parseFunctionDeclaration(isExported: boolean): AST.FunctionDeclarationNode {
+        this.consume(TokenType.Func, "Expected 'func' keyword.");
+        const name = this.consume(TokenType.Identifier, "Expected function name.");
+        this.consume(TokenType.OpenParen, "Expected '(' after function name.");
+        
+        const parameters: AST.ParameterNode[] = [];
+        if (!this.check(TokenType.CloseParen)) {
+            do {
+                parameters.push(this.parseParameter());
+            } while (this.match(TokenType.Comma));
+        }
+        this.consume(TokenType.CloseParen, "Expected ')' after parameters.");
+        this.consume(TokenType.Colon, "Expected ':' for return type annotation.");
+        const returnType = this.parseTypeAnnotation();
+        const body = this.parseBlockStatement();
 
-        while (precedence < this.getPrecedence()) {
-            const infixToken = this.advance();
-            const infix = this.infixParselets.get(infixToken.type);
-            if (!infix) {
-                throw new Error(`Parser Error: No infix parselet found for token type ${infixToken.type}`);
+        return {
+            type: 'FunctionDeclaration',
+            id: { type: 'Identifier', name: name.value },
+            modifiers: isExported ? ['export'] : [],
+            decorators: [], // Placeholder
+            parameters,
+            returnType,
+            body,
+        };
+    }
+
+    private parseParameter(): AST.ParameterNode {
+        const name = this.consume(TokenType.Identifier, "Expected parameter name.");
+        this.consume(TokenType.Colon, "Expected ':' for parameter type annotation.");
+        const type = this.parseTypeAnnotation();
+        return { type: 'Parameter', id: { type: 'Identifier', name: name.value }, paramType: type };
+    }
+
+    private parseTypeAnnotation(): AST.TypeAnnotationNode {
+        if (this.match(TokenType.I32)) return { type: 'I32Type' };
+        // ... add other types
+        throw this.error("Expected a type annotation.");
+    }
+
+    private parseBlockStatement(): AST.BlockStatementNode {
+        this.consume(TokenType.OpenBrace, "Expected '{' to start a block.");
+        const statements: AST.StatementNode[] = [];
+        while (!this.check(TokenType.CloseBrace) && !this.isAtEnd()) {
+            statements.push(this.parseStatement());
+        }
+        this.consume(TokenType.CloseBrace, "Expected '}' to end a block.");
+        return { type: 'BlockStatement', body: statements };
+    }
+
+    private parseStatement(): AST.StatementNode {
+        if (this.match(TokenType.Return)) {
+            const value = this.parseExpression();
+            return { type: 'ReturnStatement', argument: value };
+        }
+        return this.parseExpression();
+    }
+
+    private parseExpression(): AST.ExpressionNode {
+        return this.parseAddition();
+    }
+
+    private parseAddition(): AST.ExpressionNode {
+        let expr = this.parseMultiplication();
+        while(this.match(TokenType.Plus, TokenType.Minus)) {
+            const operator = this.previous().value;
+            const right = this.parseMultiplication();
+            expr = { type: 'BinaryExpression', operator, left: expr, right };
+        }
+        return expr;
+    }
+    
+    private parseMultiplication(): AST.ExpressionNode {
+        let expr = this.parsePrimary();
+        while(this.match(TokenType.Star, TokenType.Slash)) {
+            const operator = this.previous().value;
+            const right = this.parsePrimary();
+            expr = { type: 'BinaryExpression', operator, left: expr, right };
+        }
+        return expr;
+    }
+
+    private parsePrimary(): AST.ExpressionNode {
+        if (this.match(TokenType.IntegerLiteral)) {
+            return { type: 'Literal', value: parseInt(this.previous().value, 10) };
+        }
+        if (this.match(TokenType.Identifier)) {
+            return { type: 'Identifier', name: this.previous().value };
+        }
+        throw this.error("Expected an expression.");
+    }
+
+    // --- Helper methods ---
+    private match(...types: TokenType[]): boolean {
+        for (const type of types) {
+            if (this.check(type)) {
+                this.advance();
+                return true;
             }
-            left = infix(left, infixToken);
         }
-
-        return left;
-    }
-    
-    private parseIdentifier(token: Token): AST.IdentifierNode {
-        return { type: 'Identifier', name: token.value };
+        return false;
     }
 
-    private parseIntegerLiteral(token: Token): AST.LiteralNode {
-        return { type: 'Literal', value: parseInt(token.value, 10) };
+    private consume(type: TokenType, message: string): Token {
+        if (this.check(type)) return this.advance();
+        throw this.error(message);
     }
 
-    private getPrecedence(): Precedence {
-        const token = this.currentToken();
-        return PRECEDENCES[token.type] || Precedence.LOWEST;
-    }
-    
-    private currentToken(): Token {
-        return this.tokens[this.position];
+    private check(type: TokenType): boolean {
+        if (this.isAtEnd()) return false;
+        return this.peek().type === type;
     }
 
     private advance(): Token {
-        const token = this.currentToken();
         if (!this.isAtEnd()) this.position++;
-        return token;
+        return this.previous();
     }
 
-    private isAtEnd(): boolean {
-        return this.currentToken().type === TokenType.EOF;
+    private isAtEnd(): boolean { return this.peek().type === TokenType.EOF; }
+    private peek(): Token { return this.tokens[this.position]; }
+    private previous(): Token { return this.tokens[this.position - 1]; }
+    private error(message: string): Error {
+        const token = this.peek();
+        return new Error(`[Parser Error] line ${token.line}, col ${token.column}: ${message}`);
     }
 }

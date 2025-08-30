@@ -1,7 +1,8 @@
-import React, { useState, useCallback } from 'react';
-import { generateImage } from '../../services/api';
-import { ImageGeneratorIcon } from '../icons';
-import { LoadingSpinner } from '../shared';
+import React, { useState, useCallback, useRef } from 'react';
+// FIX: Corrected the import path to the main services barrel file.
+import { generateImage } from '../../services/index.ts';
+import { ImageGeneratorIcon } from '../icons.tsx';
+import { LoadingSpinner } from '../shared/index.tsx';
 
 export const BrandLogoGenerator: React.FC = () => {
     const [prompt, setPrompt] = useState<string>('A minimalist logo for a tech company named "Orbit", featuring a stylized planet and rings, vector art, SVG.');

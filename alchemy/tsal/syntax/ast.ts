@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview Defines the Abstract Syntax Tree (AST) structure for the TSAL language.
  * Each interface represents a node in the tree that the Alchemist compiler will parse,
@@ -8,7 +9,6 @@
 // --- Base Node Type ---
 export interface ASTNode {
     type: string;
-    // Optional location data for error reporting
     loc?: { start: { line: number, column: number }, end: { line: number, column: number } };
 }
 
@@ -25,10 +25,11 @@ export interface LiteralNode extends ASTNode { type: 'Literal'; value: number | 
 export interface BinaryExpressionNode extends ASTNode { type: 'BinaryExpression'; operator: string; left: ExpressionNode; right: ExpressionNode; }
 export interface CallExpressionNode extends ASTNode { type: 'CallExpression'; callee: IdentifierNode; arguments: ExpressionNode[]; }
 
-// Represents an FFI call into the host environment, an "entanglement operation".
-export interface EntanglementOperationNode extends CallExpressionNode {
+export interface EntanglementOperationNode extends ASTNode {
     type: 'EntanglementOperation';
-    hostNamespace: string; // e.g., 'console' or 'filesystem'
+    callee: IdentifierNode;
+    arguments: ExpressionNode[];
+    hostNamespace: string;
 }
 
 export type ExpressionNode = IdentifierNode | LiteralNode | BinaryExpressionNode | CallExpressionNode | EntanglementOperationNode;
@@ -39,28 +40,25 @@ export interface VariableDeclarationNode extends ASTNode {
     id: IdentifierNode;
     varType: TypeAnnotationNode;
     initializer?: ExpressionNode;
-    memoryScope: 'local' | 'global' | 'heap'; // Explicit memory scope
+    memoryScope: 'local' | 'global' | 'heap';
 }
 
-// Represents the "measurement" of a function's result.
-export interface ObservableMeasurementNode extends ASTNode { // Formerly ReturnStatement
-    type: 'ObservableMeasurement';
+export interface ReturnStatementNode extends ASTNode {
+    type: 'ReturnStatement';
     argument: ExpressionNode;
 }
 
-// Represents a conditional branch, a "collapse" of a state vector.
-export interface StateVectorCollapseNode extends ASTNode { // Formerly IfStatement
+export interface StateVectorCollapseNode extends ASTNode {
     type: 'StateVectorCollapse';
     test: ExpressionNode;
     consequent: BlockStatementNode;
     alternate?: BlockStatementNode;
 }
 
-export type StatementNode = VariableDeclarationNode | ObservableMeasurementNode | StateVectorCollapseNode | ExpressionNode;
+export type StatementNode = VariableDeclarationNode | ReturnStatementNode | StateVectorCollapseNode | ExpressionNode;
 
 // --- Blocks & Top-Level Structures ---
 export interface BlockStatementNode extends ASTNode { type: 'BlockStatement'; body: StatementNode[]; }
-
 export interface ParameterNode extends ASTNode { type: 'Parameter'; id: IdentifierNode; paramType: TypeAnnotationNode; }
 
 export interface PermissionDecoratorNode extends ASTNode {
@@ -82,17 +80,17 @@ export interface FunctionDeclarationNode extends ASTNode {
 export interface ImportDeclarationNode extends ASTNode {
     type: 'ImportDeclaration';
     specifiers: { importedName: string }[];
-    source: string; // e.g., "tsal:mem", "tsal:host:console"
+    source: string;
 }
 
-// A block where the compiler's safety checks are explicitly bypassed.
 export interface UnsafeBlockNode extends ASTNode {
     type: 'UnsafeBlock';
     body: BlockStatementNode;
 }
 
-// The root of the entire program's AST.
+export type TopLevelNode = FunctionDeclarationNode | ImportDeclarationNode;
+
 export interface ProgramNode extends ASTNode {
     type: 'Program';
-    body: (FunctionDeclarationNode | ImportDeclarationNode)[];
+    body: TopLevelNode[];
 }

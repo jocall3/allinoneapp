@@ -1,6 +1,6 @@
 import React from 'react';
 import type { ViewType, SidebarItem } from '../types';
-import { useAppContext } from '../contexts/GlobalStateContext';
+import { useAppContext } from '../contexts/GlobalStateContext.tsx';
 import { logout } from '../services';
 import { ArrowLeftOnRectangleIcon, CommandCenterIcon, ProjectExplorerIcon, ConnectionsIcon, Cog6ToothIcon } from './icons.tsx';
 
@@ -37,9 +37,11 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ onLaunchFeature }) => 
   return (
     <nav className="w-20 h-full bg-surface border-r border-border flex flex-col py-4 px-2 z-20">
       <div className="flex-shrink-0 flex justify-center p-2 mb-4">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+            <img 
+                src="https://citibankdemobusiness.dev/wp-content/uploads/2025/08/cropped-Untitled-1-180x180.png" 
+                alt="Company Logo" 
+                className="w-12 h-12"
+            />
       </div>
        <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col items-center gap-2 pt-4">
         {coreItems.map((item) => (

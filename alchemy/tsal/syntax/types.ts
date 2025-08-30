@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview Defines the core primitive and conceptual types for the TSAL language.
  * These types map directly to WebAssembly concepts, but with a higher-level, quantum-inspired abstraction.

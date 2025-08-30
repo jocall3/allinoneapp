@@ -20,7 +20,8 @@ export const SystemDesignInterviewSimulator: React.FC = () => {
     const handleNextResponse = useCallback(async () => {
         if (!userResponse.trim()) return;
         
-        const newConversation = [...conversation, { sender: 'user', text: userResponse }];
+        // FIX: Use 'as const' to ensure the string literal 'user' matches the 'Message' type.
+        const newConversation = [...conversation, { sender: 'user' as const, text: userResponse }];
         setConversation(newConversation);
         setUserResponse('');
         setIsLoading(true);
@@ -30,10 +31,12 @@ export const SystemDesignInterviewSimulator: React.FC = () => {
             let aiResponse = '';
             for await (const chunk of stream) {
                 aiResponse += chunk;
-                setConversation([...newConversation, { sender: 'ai', text: aiResponse }]);
+                // FIX: Use 'as const' to ensure the string literal 'ai' matches the 'Message' type.
+                setConversation([...newConversation, { sender: 'ai' as const, text: aiResponse }]);
             }
         } catch (err) {
-            setConversation([...newConversation, { sender: 'ai', text: "Sorry, I encountered an error." }]);
+            // FIX: Use 'as const' to ensure the string literal 'ai' matches the 'Message' type.
+            setConversation([...newConversation, { sender: 'ai' as const, text: "Sorry, I encountered an error." }]);
         } finally {
             setIsLoading(false);
         }

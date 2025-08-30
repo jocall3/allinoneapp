@@ -1,101 +1,111 @@
+
 /**
  * @fileoverview The Code Generator for the Alchemist compiler.
  * It takes a validated AST and emits WebAssembly Text Format (WAT) code.
- * This implementation uses a visitor pattern to traverse the AST.
  */
 
 import * as AST from '../../tsal/syntax/ast';
 
 export class CodeGenerator {
-    private ast: AST.ProgramNode;
     private wat: string = '';
+    private indentLevel: number = 0;
 
-    constructor(ast: AST.ProgramNode) {
-        this.ast = ast;
-    }
+    public generate(node: AST.ProgramNode): string {
+        this.emit('(module');
+        this.indent();
 
-    public generate(): string {
-        console.log("[CodeGenerator] Starting Wasm code generation...");
-        this.wat = '(module\n';
+        // Standard library imports could go here
         
-        // Define memory if needed (a real implementation would detect this)
-        this.wat += '  (memory 1)\n';
-        this.wat += '  (export "memory" (memory 0))\n';
+        node.body.forEach(n => this.visit(n));
 
-        this.ast.body.forEach(node => {
-            if (node.type === 'FunctionDeclaration') {
-                this.visitFunctionDeclaration(node as AST.FunctionDeclarationNode);
-            }
-        });
-
-        this.wat += '\n)';
-        console.log("[CodeGenerator] Finished Wasm code generation.");
+        this.dedent();
+        this.emit(')');
         return this.wat;
+    }
+    
+    private visit(node: AST.ASTNode): void {
+        switch (node.type) {
+            case 'FunctionDeclaration': return this.visitFunctionDeclaration(node as AST.FunctionDeclarationNode);
+            case 'BlockStatement': return this.visitBlockStatement(node as AST.BlockStatementNode);
+            case 'ReturnStatement': return this.visitReturnStatement(node as AST.ReturnStatementNode);
+            case 'BinaryExpression': return this.visitBinaryExpression(node as AST.BinaryExpressionNode);
+            case 'Identifier': return this.visitIdentifier(node as AST.IdentifierNode);
+            case 'Literal': return this.visitLiteral(node as AST.LiteralNode);
+            default: throw new Error(`CodeGenerator: Unknown AST node type: ${node.type}`);
+        }
     }
 
     private visitFunctionDeclaration(node: AST.FunctionDeclarationNode) {
-        const funcName = node.id.name;
-        const params = node.parameters.map(p => `(param $${p.id.name} ${this.mapTypeToWasm(p.paramType)})`).join(' ');
-        const result = `(result ${this.mapTypeToWasm(node.returnType)})`;
+        let funcDef = `(func $${node.id.name}`;
 
-        this.wat += `  (func $${funcName} ${params} ${result}\n`;
-
-        // Handle local variables
-        // A real implementation would gather all locals first.
-
-        node.body.body.forEach(stmt => this.visitStatement(stmt));
-
-        this.wat += `  )\n`;
-        
         if (node.modifiers.includes('export')) {
-            this.wat += `  (export "${funcName}" (func $${funcName}))\n`;
+            funcDef += ` (export "${node.id.name}")`;
         }
+
+        node.parameters.forEach(p => {
+            funcDef += ` (param $${p.id.name} ${this.mapType(p.paramType)})`;
+        });
+        
+        funcDef += ` (result ${this.mapType(node.returnType)})`;
+        
+        this.emit(funcDef);
+        this.indent();
+
+        this.visit(node.body);
+
+        this.dedent();
+        this.emit(')');
+    }
+
+    private visitBlockStatement(node: AST.BlockStatementNode) {
+        node.body.forEach(s => this.visit(s));
     }
     
-    private visitStatement(node: AST.StatementNode) {
-        switch(node.type) {
-            case 'ObservableMeasurement': // Return statement
-                this.visitExpression((node as AST.ObservableMeasurementNode).argument);
-                this.wat += '    return\n';
-                break;
-            // Add other statement types
+    private visitReturnStatement(node: AST.ReturnStatementNode) {
+        this.visit(node.argument);
+        // In Wasm, the last value on the stack is implicitly returned.
+        // The 'return' keyword is handled by the block structure.
+    }
+    
+    private visitBinaryExpression(node: AST.BinaryExpressionNode) {
+        this.visit(node.left);
+        this.visit(node.right);
+
+        switch(node.operator) {
+            case '+': this.emit('i32.add'); break;
+            case '-': this.emit('i32.sub'); break;
+            case '*': this.emit('i32.mul'); break;
+            case '/': this.emit('i32.div_s'); break; // Signed division
+            default: throw new Error(`Unsupported binary operator: ${node.operator}`);
         }
     }
 
-    private visitExpression(node: AST.ExpressionNode) {
-        switch(node.type) {
-            case 'Literal':
-                this.wat += `    i32.const ${(node as AST.LiteralNode).value}\n`;
-                break;
-            case 'Identifier':
-                this.wat += `    local.get $${(node as AST.IdentifierNode).name}\n`;
-                break;
-            case 'BinaryExpression':
-                const binNode = node as AST.BinaryExpressionNode;
-                this.visitExpression(binNode.left);
-                this.visitExpression(binNode.right);
-                this.wat += `    ${this.mapOperatorToWasm(binNode.operator)}\n`;
-                break;
+    private visitIdentifier(node: AST.IdentifierNode) {
+        this.emit(`(local.get $${node.name})`);
+    }
+
+    private visitLiteral(node: AST.LiteralNode) {
+        if (typeof node.value === 'number') {
+            this.emit(`(i32.const ${node.value})`);
+        } else {
+            throw new Error(`Unsupported literal type: ${typeof node.value}`);
         }
     }
 
-    private mapTypeToWasm(type: AST.TypeAnnotationNode): string {
-        switch (type.type) {
+    private mapType(typeNode: AST.TypeAnnotationNode): string {
+        switch (typeNode.type) {
             case 'I32Type': return 'i32';
             case 'I64Type': return 'i64';
             case 'F32Type': return 'f32';
             case 'F64Type': return 'f64';
-            default: return 'i32'; // Fallback
+            default: throw new Error(`Unsupported type for Wasm: ${typeNode.type}`);
         }
     }
-    
-    private mapOperatorToWasm(op: string): string {
-        switch (op) {
-            case '+': return 'i32.add';
-            case '-': return 'i32.sub';
-            case '*': return 'i32.mul';
-            case '/': return 'i32.div_s';
-            default: throw new Error(`Unsupported operator: ${op}`);
-        }
+
+    private emit(str: string) {
+        this.wat += `${'  '.repeat(this.indentLevel)}${str}\n`;
     }
+
+    private indent() { this.indentLevel++; }
+    private dedent() { this.indentLevel--; }
 }

@@ -1,3 +1,5 @@
+
+
 import React, { Suspense, useCallback, useState, useEffect } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAppContext } from './contexts/GlobalStateContext';
@@ -7,7 +9,8 @@ import { LeftSidebar } from './components/LeftSidebar';
 import { CommandPalette } from './components/CommandPalette';
 import { VoiceCommandModal } from './components/VoiceCommandModal';
 import { DesktopView } from './components/desktop/DesktopView';
-import { AlchemistEngine } from './alchemy/engine';
+import { Alchemist } from './alchemy/alchemist/compiler';
+import exampleTsal from './alchemy/example.tsal?raw';
 
 // FIX: Added a new WindowState interface to manage the state of each open window in the new desktop environment.
 // FIX: Added optional props to window state to support features launched with initial data.
@@ -34,22 +37,35 @@ export const App: React.FC = () => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [nextZIndex, setNextZIndex] = useState(Z_INDEX_BASE);
 
-  // --- Alchemy Engine Initialization ---
+  // --- Alchemy Engine Initialization & Proof-of-Concept ---
   useEffect(() => {
-    const initializeAlchemy = async () => {
-        console.log("Initializing Alchemy Engine...");
-        const engine = new AlchemistEngine();
+    const runAlchemyProofOfConcept = async () => {
+        console.log("🔥 Initializing Alchemist Engine...");
+        const alchemist = new Alchemist();
         try {
-            // For this proof-of-concept, we'll just catalog the first few features
-            // to demonstrate the capability without excessive API calls on startup.
-            const featuresToCatalog = ALL_FEATURES.slice(0, 5); 
-            const catalog = await engine.buildCatalog(featuresToCatalog);
-            console.log("🔥 Alchemy Catalog Generated:", catalog);
+            console.log("Compiling example.tsal...");
+            // FIX: The `compile` method returns an object containing the instance.
+            const compilationResult = await alchemist.compile(exampleTsal);
+            console.log("✅ Compilation successful. Instance:", compilationResult.instance);
+            
+            const add = compilationResult.instance.exports.add as (a: number, b: number) => number;
+            if (typeof add !== 'function') {
+                throw new Error("Exported 'add' function not found in Wasm module.");
+            }
+            
+            const result = add(40, 2);
+            console.log(`🚀 Wasm execution result: add(40, 2) = ${result}`);
+            if (result !== 42) {
+                 console.error("VALIDATION FAILED! The universe is broken.");
+            } else {
+                 console.log("✨ Billion-dollar code confirmed. The machine is alive.");
+            }
+
         } catch (error) {
-            console.error("Failed to initialize Alchemy Engine:", error);
+            console.error("☠️ Alchemy Engine Proof-of-Concept FAILED:", error);
         }
     };
-    initializeAlchemy();
+    runAlchemyProofOfConcept();
   }, []);
 
 

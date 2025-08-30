@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview The Lexer (or Scanner/Tokenizer) for the TSAL language.
  * It takes a raw source code string and breaks it into a sequence of tokens.
