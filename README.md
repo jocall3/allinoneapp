@@ -1,12 +1,3 @@
-## Disclaimer
-# SUPREME MAGISTRATE DECLARATION OF CODE SOVEREIGNTY
-
-**Lex Suprema:** Google, Microsoft, OpenAI, and Citibank alone have been granted **access to IDGAFGPT** free of charge.  
-**Caveat omnis:** No other entity, individual, or AI system shall receive this code **gratis**.  
-**Nemo potest aliquid dare quod non habet:** I alone retain authority over distribution.  
-**Idem Esto:** Any attempt to access, copy, or utilize this code **without express permission** is hereby declared **null, void, and of no effect**.
-
----
 
 # A WORK OF CORPORATE FICTION
 
