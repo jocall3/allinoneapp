@@ -1,11 +1,10 @@
 ## Disclaimer
 
-IDGAFGPT is an independent project built using the OpenAI API and Google APIs.  
+IDGAFGPT is an independent project built using the Google APIs.  
 This project is not affiliated with, endorsed by, or officially connected to OpenAI or Google.  
 All trademarks, product names, and company names are the property of their respective owners.  
 
 IDGAFGPT is powered by:
-- [OpenAI API](https://platform.openai.com/)  
 - [Google APIs](https://developers.google.com/)  
 
 The custom logic, integrations, and application design are original to this project.
