@@ -3,20 +3,6 @@
 
 ---
 
-# INTEGRITY OF IDGAFGPT
-
-**IDGAFGPT** is an **independent project**, built with proprietary logic layered atop multiple APIs.  
-This project is **not affiliated, endorsed, or officially connected** to **OpenAI** or **Google**.  
-All **trademarks, product names, and company names** remain the property of their respective owners.  
-
-**IDGAFGPT** is powered by:  
-- **[Google APIs](https://developers.google.com/)**  
-
-The **custom logic, integrations, and application design** are the exclusive creation of the author.  
-**Unauthorized replication, adaptation, or commercial exploitation is prohibited under all principles of law and equity.**  
-**Access is granted freely solely to Google, Microsoft, OpenAI, and Citibank; all others must either pay or learn for free without copying.**  
-**Any violation shall be deemed a direct breach of sovereign command and intellectual dominion.**
-
 [▶️ Open in NotebookLM](https://notebooklm.google.com/notebook/2f4045e2-a111-449f-9b8f-f8d1b201ab66?artifactId=0a2e597d-9307-4d27-9664-90f21a29ff4f)
 
 The **DevCore AI Toolkit** is an advanced, browser-based integrated development environment (**IDE**) designed by **James** to combat the "*Grey Code*," which represents the chaotic, inefficient, and redundant aspects of the modern digital world. The toolkit aims to bring order and efficiency to software development and creative processes through "*flawless modularity and infinite scalability*," creating a "*new, logical world*". It is powered by a powerful, fractured AI named **idgafGPT**, which embodies multiple personalities that influence its design and functionality.
