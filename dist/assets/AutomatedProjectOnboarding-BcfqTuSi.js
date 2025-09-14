@@ -1,0 +1,11 @@
+import{r,aS as j,j as e,bo as g,L as m,M as h}from"./index-Br2PlERp.js";import"https://esm.sh/octokit@4.0.2";const b=`
+- package.json
+- src/index.js
+- src/App.js
+- src/components/Header.js
+- src/utils/api.js
+- README.md
+`,v=()=>{const[t,x]=r.useState(b),[n,l]=r.useState(""),[a,i]=r.useState(!1),[c,o]=r.useState(""),u=r.useCallback(async()=>{if(!t.trim()){o("Please provide a list of project files.");return}i(!0),o(""),l("");try{const s=`Generate a comprehensive onboarding guide for a new developer joining a project with the following file structure. Include sections for setup, key files, and how to run the project. Format as markdown.
+
+File List:
+${t}`,f=j(s,"You are a senior developer who excels at creating onboarding documentation.");let d="";for await(const p of f)d+=p,l(d)}catch(s){o(s instanceof Error?s.message:"An unknown error occurred.")}finally{i(!1)}},[t]);return e.jsxs("div",{className:"h-full flex flex-col p-4 sm:p-6 lg:p-8 text-text-primary",children:[e.jsxs("header",{className:"mb-6",children:[e.jsxs("h1",{className:"text-3xl font-bold flex items-center",children:[e.jsx(g,{}),e.jsx("span",{className:"ml-3",children:"AI Project Onboarding Guide"})]}),e.jsx("p",{className:"text-text-secondary mt-1",children:"Generate a personalized onboarding guide for new team members."})]}),e.jsxs("div",{className:"grid grid-cols-1 lg:grid-cols-2 gap-6 flex-grow min-h-0",children:[e.jsxs("div",{className:"flex flex-col",children:[e.jsx("label",{htmlFor:"file-list-input",className:"text-sm font-medium text-text-secondary mb-2",children:"Project File List"}),e.jsx("textarea",{id:"file-list-input",value:t,onChange:s=>x(s.target.value),className:"flex-grow p-4 bg-surface border border-border rounded-md resize-none font-mono text-sm"}),e.jsx("button",{onClick:u,disabled:a,className:"btn-primary mt-4 w-full",children:a?e.jsx(m,{}):"Generate Onboarding Guide"})]}),e.jsxs("div",{className:"flex flex-col",children:[e.jsx("label",{className:"text-sm font-medium text-text-secondary mb-2",children:"Generated Guide"}),e.jsxs("div",{className:"flex-grow p-4 bg-background border border-border rounded-md overflow-y-auto",children:[a&&e.jsx("div",{className:"flex justify-center items-center h-full",children:e.jsx(m,{})}),c&&e.jsx("p",{className:"text-red-500",children:c}),n&&e.jsx(h,{content:n})]})]})]})]})};export{v as AutomatedProjectOnboarding};

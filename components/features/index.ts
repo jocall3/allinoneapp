@@ -53,8 +53,6 @@ const implementedFeatures: Record<string, { loader: () => Promise<{ [key: string
     'ai-story-scaffolding': { loader: () => import('./AiStoryScaffolding.tsx'), exportName: 'AiStoryScaffolding' },
     'omnistruct-framework': { loader: () => import('./OmniStructFramework.tsx'), exportName: 'OmniStructFramework' },
     'alchemy-studio': { loader: () => import('../../alchemy/AlchemyStudio.tsx'), exportName: 'AlchemyStudio' },
-    'project-dissertations': { loader: () => import('./ProjectDissertations.tsx'), exportName: 'ProjectDissertations' },
-    // Wire up all 50 new components
     'context-aware-command-suggestions': { loader: () => import('./ContextAwareCommandSuggestions.tsx'), exportName: 'ContextAwareCommandSuggestions' },
     'natural-language-workflow-chaining': { loader: () => import('./NaturalLanguageWorkflowChaining.tsx'), exportName: 'NaturalLanguageWorkflowChaining' },
     'voice-command-integration': { loader: () => import('./VoiceCommandIntegration.tsx'), exportName: 'VoiceCommandIntegration' },

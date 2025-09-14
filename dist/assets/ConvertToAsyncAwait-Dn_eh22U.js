@@ -1,0 +1,10 @@
+import{r,aU as u,j as e,a3 as p,L as x,M as j}from"./index-Br2PlERp.js";import"https://esm.sh/octokit@4.0.2";const b=`
+fetch('https://api.example.com/data')
+  .then(response => response.json())
+  .then(data => {
+    console.log(data);
+  })
+  .catch(error => {
+    console.error('Error:', error);
+  });
+`,N=()=>{const[t,m]=r.useState(b),[c,n]=r.useState(""),[a,l]=r.useState(!1),[d,o]=r.useState(""),f=r.useCallback(async()=>{if(!t.trim()){o("Please enter code to refactor.");return}l(!0),o(""),n("");try{const s=await u(t);let i="";for await(const h of s)i+=h;n(i)}catch(s){o(s instanceof Error?s.message:"An unknown error occurred.")}finally{l(!1)}},[t]);return e.jsxs("div",{className:"h-full flex flex-col p-4 sm:p-6 lg:p-8 text-text-primary",children:[e.jsxs("header",{className:"mb-6",children:[e.jsxs("h1",{className:"text-3xl font-bold flex items-center",children:[e.jsx(p,{}),e.jsx("span",{className:"ml-3",children:"Refactor to Async/Await"})]}),e.jsx("p",{className:"text-text-secondary mt-1",children:"Automatically refactor callback or .then() based code to modern async/await syntax."})]}),e.jsxs("div",{className:"grid grid-cols-1 lg:grid-cols-2 gap-6 flex-grow min-h-0",children:[e.jsxs("div",{className:"flex flex-col",children:[e.jsx("label",{htmlFor:"code-input",className:"text-sm font-medium text-text-secondary mb-2",children:"Original Code"}),e.jsx("textarea",{id:"code-input",value:t,onChange:s=>m(s.target.value),className:"flex-grow p-4 bg-surface border border-border rounded-md resize-none font-mono text-sm"}),e.jsx("button",{onClick:f,disabled:a,className:"btn-primary mt-4 w-full",children:a?e.jsx(x,{}):"Refactor"})]}),e.jsxs("div",{className:"flex flex-col",children:[e.jsx("label",{className:"text-sm font-medium text-text-secondary mb-2",children:"Refactored Code"}),e.jsxs("div",{className:"flex-grow p-1 bg-background border border-border rounded-md overflow-y-auto",children:[a&&e.jsx("div",{className:"flex justify-center items-center h-full",children:e.jsx(x,{})}),d&&e.jsx("p",{className:"p-4 text-red-500",children:d}),c&&e.jsx(j,{content:c})]})]})]})]})};export{N as ConvertToAsyncAwait};

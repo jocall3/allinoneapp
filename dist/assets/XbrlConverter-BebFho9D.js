@@ -1,0 +1,13 @@
+import{r as s,H as j,j as e,X as b,L as m,M as v}from"./index-Br2PlERp.js";import"https://esm.sh/octokit@4.0.2";const g=`{
+  "company": "ExampleCorp",
+  "year": 2024,
+  "quarter": 2,
+  "revenue": {
+    "amount": 1500000,
+    "currency": "USD"
+  },
+  "profit": {
+    "amount": 250000,
+    "currency": "USD"
+  }
+}`,S=({jsonInput:u})=>{const[i,p]=s.useState(u||g),[t,x]=s.useState(""),[r,d]=s.useState(!1),[o,c]=s.useState(""),f=s.useCallback(async n=>{if(!n.trim()){c("Please enter valid JSON to convert.");return}d(!0),c(""),x("");try{const a=j(n);let l="";for await(const h of a)l+=h,x(l)}catch(a){const l=a instanceof Error?a.message:"An unknown error occurred.";c(`Failed to convert: ${l}`)}finally{d(!1)}},[]);return e.jsxs("div",{className:"h-full flex flex-col p-4 sm:p-6 lg:p-8 text-text-primary",children:[e.jsxs("header",{className:"mb-6",children:[e.jsxs("h1",{className:"text-3xl font-bold flex items-center",children:[e.jsx(b,{}),e.jsx("span",{className:"ml-3",children:"JSON to XBRL Converter"})]}),e.jsx("p",{className:"text-text-secondary mt-1",children:"Convert JSON data into a simplified XBRL-like XML format using AI."})]}),e.jsxs("div",{className:"flex-grow flex flex-col gap-4 min-h-0",children:[e.jsxs("div",{className:"flex flex-col flex-1 min-h-0",children:[e.jsx("label",{htmlFor:"json-input",className:"text-sm font-medium text-text-secondary mb-2",children:"JSON Input"}),e.jsx("textarea",{id:"json-input",value:i,onChange:n=>p(n.target.value),placeholder:"Paste your JSON here...",className:"flex-grow p-4 bg-surface border border-border rounded-md resize-none font-mono text-sm"})]}),e.jsx("div",{className:"flex-shrink-0",children:e.jsx("button",{onClick:()=>f(i),disabled:r,className:"btn-primary w-full max-w-xs mx-auto flex items-center justify-center px-6 py-3",children:r?e.jsx(m,{}):"Convert to XBRL"})}),e.jsxs("div",{className:"flex flex-col flex-1 min-h-0",children:[e.jsx("label",{className:"text-sm font-medium text-text-secondary mb-2",children:"XBRL-like XML Output"}),e.jsxs("div",{className:"relative flex-grow p-1 bg-background border border-border rounded-md overflow-y-auto",children:[r&&!t&&e.jsx("div",{className:"flex items-center justify-center h-full",children:e.jsx(m,{})}),o&&e.jsx("p",{className:"p-4 text-red-500",children:o}),t&&e.jsx(v,{content:"```xml\n"+t.replace(/```xml\n|```/g,"")+"\n```"}),!r&&t&&e.jsx("button",{onClick:()=>navigator.clipboard.writeText(t),className:"absolute top-2 right-2 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-md text-xs",children:"Copy XML"}),!r&&!t&&!o&&e.jsx("div",{className:"text-text-secondary h-full flex items-center justify-center",children:"Output will appear here."})]})]})]})]})};export{S as XbrlConverter};

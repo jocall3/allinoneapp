@@ -1,0 +1,11 @@
+import{r as t,aL as u,j as e,aM as f,L as d,M as p}from"./index-Br2PlERp.js";import"https://esm.sh/octokit@4.0.2";const h=`
+--- FILE: report_q1.txt ---
+The first quarter showed strong growth, with revenue up 15%.
+
+--- FILE: quarter1_summary.txt ---
+Q1 performance was robust, seeing a 15% increase in revenue.
+
+--- FILE: todo.txt ---
+- Buy milk
+- Finish presentation
+`,g=()=>{const[r,m]=t.useState(h),[l,i]=t.useState(""),[a,o]=t.useState(!1),[c,n]=t.useState(""),x=t.useCallback(async()=>{if(!r.trim()){n("Please provide file content to analyze.");return}o(!0),n(""),i("");try{const s=await u(r);i(s)}catch(s){n(s instanceof Error?s.message:"An unknown error occurred.")}finally{o(!1)}},[r]);return e.jsxs("div",{className:"h-full flex flex-col p-4 sm:p-6 lg:p-8 text-text-primary",children:[e.jsxs("header",{className:"mb-6",children:[e.jsxs("h1",{className:"text-3xl font-bold flex items-center",children:[e.jsx(f,{}),e.jsx("span",{className:"ml-3",children:"Find Similar Files"})]}),e.jsx("p",{className:"text-text-secondary mt-1",children:"Identify semantically similar files and duplicates based on content."})]}),e.jsxs("div",{className:"grid grid-cols-1 lg:grid-cols-2 gap-6 flex-grow min-h-0",children:[e.jsxs("div",{className:"flex flex-col",children:[e.jsx("label",{htmlFor:"content-input",className:"text-sm font-medium text-text-secondary mb-2",children:"File Contents"}),e.jsx("textarea",{id:"content-input",value:r,onChange:s=>m(s.target.value),className:"flex-grow p-4 bg-surface border border-border rounded-md resize-none",placeholder:"Paste file contents, separated by '--- FILE: filename ---'"}),e.jsx("button",{onClick:x,disabled:a,className:"btn-primary mt-4 w-full",children:a?e.jsx(d,{}):"Find Similar Files"})]}),e.jsxs("div",{className:"flex flex-col",children:[e.jsx("label",{className:"text-sm font-medium text-text-secondary mb-2",children:"Similarity Report"}),e.jsxs("div",{className:"flex-grow p-4 bg-background border border-border rounded-md overflow-y-auto",children:[a&&e.jsx("div",{className:"flex justify-center items-center h-full",children:e.jsx(d,{})}),c&&e.jsx("p",{className:"text-red-500",children:c}),l&&e.jsx(p,{content:l})]})]})]})]})};export{g as FindSimilarFiles};
