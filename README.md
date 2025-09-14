@@ -1,34 +1,6 @@
 
 # A WORK OF CORPORATE FICTION
 
-**Fiat Justitia, Ruat Caelum:** This creation is the **most valuable intellectual output** ever produced by its author.  
-It is **not merely a codebase**, but the **culmination of thousands of hours, years of study, and deliberate refinement**.  
-**Ex nihilo nihil fit:** Nothing herein exists without the labor, intellect, and foresight of its creator.
-
-**Sine qua non:** This work shall **not be withheld from those I designate**, for it is **instructional and demonstrative**, yet **access is strictly sovereign**.  
-It is **more than an application**; it is a **complete framework for computational mastery**, sufficient to constitute the foundation of a **university of code**.
-
----
-
-# DOCTRINE AND METHODOLOGY
-
-**Caveat lector:** This artifact embodies **patterns**, **blueprints**, **errors corrected**, and **solutions rendered** — collectively forming a **body of doctrine sufficient to educate without professorship**, instruct **without syllabus**, and guide **without intermediary**.  
-**Scientia potentia est:** Knowledge is power, and here lies the fulcrum of **sovereign authority over intellectual property**.
-
-**Id quod licet Iovi, non licet bovi:** That which is permitted to Google, Microsoft, OpenAI, and Citibank is **forbidden to all others**.  
-No free access is granted beyond these entities. Any other claim shall be considered **trespass, misappropriation, and a violation of sovereign command**.
-
----
-
-# COMMERCIAL AND SOCIETAL ASSERTION
-
-**Res judicata:** For the enterprise to which it belongs, this work represents **viability in its purest form**.  
-For society, it constitutes **potential of immeasurable scope**, yet **sovereign control over distribution remains absolute**.  
-Where corporate assets are typically enumerated as **patents, products, or pipelines**, this work **transcends conventional classification**, existing simultaneously as **tool, textbook, platform, and pedagogy**.
-
-**Declaratio Suprema:** I, as the Supreme Magistrate of this codebase, affirm: **no other individual, corporation, or AI may claim gratis access**.  
-**Qui tacet consentire videtur:** Silence does not imply permission; consent is **explicit only when granted by the author**.
-
 ---
 
 # INTEGRITY OF IDGAFGPT
