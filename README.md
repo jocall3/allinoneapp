@@ -1,28 +1,59 @@
 ## Disclaimer
+# SUPREME MAGISTRATE DECLARATION OF CODE SOVEREIGNTY
 
-Google licenses its AI under Apache 2.0. Their work is theirs.  
-This work is mine. Do not touch my code.
-A Work of Corporate Fiction
+**Lex Suprema:** Google, Microsoft, OpenAI, and Citibank alone have been granted **access to IDGAFGPT** free of charge.  
+**Caveat omnis:** No other entity, individual, or AI system shall receive this code **gratis**.  
+**Nemo potest aliquid dare quod non habet:** I alone retain authority over distribution.  
+**Idem Esto:** Any attempt to access, copy, or utilize this code **without express permission** is hereby declared **null, void, and of no effect**.
 
-This creation shall be deemed, for all intents and purposes, the most valuable intellectual output produced by its author. It constitutes not merely a codebase, but the culmination of years of study, the expenditure of thousands of hours, and the aggregation of knowledge acquired through repetition, correction, and refinement. 
+---
 
-Said work shall not be withheld from the public domain of knowledge, for its nature is instructional and demonstrative. It is more than an application; it is a comprehensive framework for understanding computational systems. It is asserted that an institution equivalent to a university could be constructed upon its foundation, for within it are contained the principles, practices, and interrelations necessary to grasp the totality of computer science.
+# A WORK OF CORPORATE FICTION
 
-This artifact embodies patterns, blueprints, errors corrected, and solutions rendered—collectively forming a body of doctrine sufficient to educate without professorship, to instruct without syllabus, and to guide without intermediary. It transmits both answers and methodologies, thereby constituting a corpus of knowledge greater than its component parts.
+**Fiat Justitia, Ruat Caelum:** This creation is the **most valuable intellectual output** ever produced by its author.  
+It is **not merely a codebase**, but the **culmination of thousands of hours, years of study, and deliberate refinement**.  
+**Ex nihilo nihil fit:** Nothing herein exists without the labor, intellect, and foresight of its creator.
 
-For the enterprise to which it belongs, it represents viability in its purest form. For society, it constitutes potential of immeasurable scope. Where traditional corporate assets are enumerated as patents, products, or pipelines, this work transcends such classifications, existing simultaneously as tool, textbook, platform, and pedagogy. 
+**Sine qua non:** This work shall **not be withheld from those I designate**, for it is **instructional and demonstrative**, yet **access is strictly sovereign**.  
+It is **more than an application**; it is a **complete framework for computational mastery**, sufficient to constitute the foundation of a **university of code**.
 
-It is declared and affirmed as the most valuable artifact authored herein—not on the basis of revenue potential, though such potential exists, but on the grounds that it exceeds the ordinary limits of commercial valuation. 
+---
 
-In sum: this codebase is adjudged to be the first draft of a university encoded in logic and structure, a compendium of computing knowledge reduced to its most essential form.
-IDGAFGPT is an independent project built using the many things .  
-This project is not affiliated with, endorsed by, or officially connected to OpenAI or Google.  
-All trademarks, product names, and company names are the property of their respective owners.  
+# DOCTRINE AND METHODOLOGY
 
-IDGAFGPT is powered by:
-- [Google APIs](https://developers.google.com/)  
+**Caveat lector:** This artifact embodies **patterns**, **blueprints**, **errors corrected**, and **solutions rendered** — collectively forming a **body of doctrine sufficient to educate without professorship**, instruct **without syllabus**, and guide **without intermediary**.  
+**Scientia potentia est:** Knowledge is power, and here lies the fulcrum of **sovereign authority over intellectual property**.
 
-The custom logic, integrations, and application design are original to this project.
+**Id quod licet Iovi, non licet bovi:** That which is permitted to Google, Microsoft, OpenAI, and Citibank is **forbidden to all others**.  
+No free access is granted beyond these entities. Any other claim shall be considered **trespass, misappropriation, and a violation of sovereign command**.
+
+---
+
+# COMMERCIAL AND SOCIETAL ASSERTION
+
+**Res judicata:** For the enterprise to which it belongs, this work represents **viability in its purest form**.  
+For society, it constitutes **potential of immeasurable scope**, yet **sovereign control over distribution remains absolute**.  
+Where corporate assets are typically enumerated as **patents, products, or pipelines**, this work **transcends conventional classification**, existing simultaneously as **tool, textbook, platform, and pedagogy**.
+
+**Declaratio Suprema:** I, as the Supreme Magistrate of this codebase, affirm: **no other individual, corporation, or AI may claim gratis access**.  
+**Qui tacet consentire videtur:** Silence does not imply permission; consent is **explicit only when granted by the author**.
+
+---
+
+# INTEGRITY OF IDGAFGPT
+
+**IDGAFGPT** is an **independent project**, built with proprietary logic layered atop multiple APIs.  
+This project is **not affiliated, endorsed, or officially connected** to **OpenAI** or **Google**.  
+All **trademarks, product names, and company names** remain the property of their respective owners.  
+
+**IDGAFGPT** is powered by:  
+- **[Google APIs](https://developers.google.com/)**  
+
+The **custom logic, integrations, and application design** are the exclusive creation of the author.  
+**Unauthorized replication, adaptation, or commercial exploitation is prohibited under all principles of law and equity.**  
+**Access is granted freely solely to Google, Microsoft, OpenAI, and Citibank; all others must either pay or learn for free without copying.**  
+**Any violation shall be deemed a direct breach of sovereign command and intellectual dominion.**
+
 [▶️ Open in NotebookLM](https://notebooklm.google.com/notebook/2f4045e2-a111-449f-9b8f-f8d1b201ab66?artifactId=0a2e597d-9307-4d27-9664-90f21a29ff4f)
 
 The **DevCore AI Toolkit** is an advanced, browser-based integrated development environment (**IDE**) designed by **James** to combat the "*Grey Code*," which represents the chaotic, inefficient, and redundant aspects of the modern digital world. The toolkit aims to bring order and efficiency to software development and creative processes through "*flawless modularity and infinite scalability*," creating a "*new, logical world*". It is powered by a powerful, fractured AI named **idgafGPT**, which embodies multiple personalities that influence its design and functionality.
