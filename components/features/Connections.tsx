@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { GithubIcon } from '../icons.tsx';
 // FIX: Renamed useGlobalState to useAppContext
@@ -64,6 +63,7 @@ const GitHubConnection: React.FC = () => {
                              <p className="text-sm text-text-secondary">Not Connected</p>
                         )}
                     </div>
+                </div>
                  {isGithubConnected && (
                     <button onClick={handleDisconnect} className="px-4 py-2 bg-red-500/10 text-red-600 font-semibold rounded-lg hover:bg-red-500/20">
                         Disconnect

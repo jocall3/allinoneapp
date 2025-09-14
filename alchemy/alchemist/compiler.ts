@@ -9,7 +9,7 @@ import { Lexer } from './pipeline/lexer';
 import { Parser } from './pipeline/parser';
 import { SemanticAnalyzer } from './pipeline/semantic';
 import { CodeGenerator } from './pipeline/codegen';
-import { AetherLink } from '../../aetherlink/ffi';
+import { AetherLink } from '../aetherlink/ffi';
 import { watToWasm } from './wabt';
 
 export class Alchemist {
