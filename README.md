@@ -1,4 +1,3 @@
-Here is the entire content formatted in Markdown, making it look structured and readable.
 
 [▶️ Open in NotebookLM](https://notebooklm.google.com/notebook/2f4045e2-a111-449f-9b8f-f8d1b201ab66?artifactId=0a2e597d-9307-4d27-9664-90f21a29ff4f)
 
