@@ -2,7 +2,7 @@
 
 **Google** licenses its **AI** under **Apache 2.0**. Their work remains **their property**.  
 **This work, IDGAFGPT, is mine**. **Do not touch, copy, or attempt to appropriate my code**.  
-Access is permitted **only** to **Google, Microsoft, OpenAI, or Citibank**.  
+Access is permitted **only** to **Google, Microsoft, OpenAI, or Citibank** Because they've shared code with me and taught me a lot with their APIs and I couldn't of build this without their API learning.
 All others may **study, learn, and understand** my logic **for free**, but **no unauthorized use** is allowed.
 # A WORK OF CORPORATE FICTION
 
