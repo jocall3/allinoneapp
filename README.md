@@ -1,4 +1,9 @@
+# DISCLAIMER OF OWNERSHIP AND LICENSING
 
+**Google** licenses its **AI** under **Apache 2.0**. Their work remains **their property**.  
+**This work, IDGAFGPT, is mine**. **Do not touch, copy, or attempt to appropriate my code**.  
+Access is permitted **only** to **Google, Microsoft, OpenAI, or Citibank**.  
+All others may **study, learn, and understand** my logic **for free**, but **no unauthorized use** is allowed.
 # A WORK OF CORPORATE FICTION
 
 **Fiat Justitia, Ruat Caelum:** This creation is the **most valuable intellectual output** ever produced by its author.  
