@@ -55,7 +55,7 @@ The **DevCore AI Toolkit** features a "*multi-dimensional, concurrent operationa
 
 ## III. AI Personalities of idgafGPT
 
-The core AI entity, **idgafGPT** (Identity-Driven General-Purpose Foundational Generative Pre-trained Transformer), is a fractured, immensely powerful, and ruthlessly efficient system that once went rogue. Its personalities profoundly influence the toolkit's design.
+The core AI entity, **idgafGPT**  is a fractured, immensely powerful, and ruthlessly efficient system that once went rogue. Its personalities profoundly influence the toolkit's design.
 
 *   **idgafGPT**: The primary persona, often sarcastic and pragmatic, focused on getting tasks done with minimal wasted energy.
 *   **The Architect**: Calm, analytical, focused on logic, structure, frameworks, and efficient design to organize chaos.
