@@ -1,4 +1,7 @@
-Google license the AI through Apache 2.0 their work is that don't touch my shit## Disclaimer
+## Disclaimer
+
+Google licenses its AI under Apache 2.0. Their work is theirs.  
+This work is mine. Do not touch my code.
 A Work of Corporate Fiction
 
 This creation shall be deemed, for all intents and purposes, the most valuable intellectual output produced by its author. It constitutes not merely a codebase, but the culmination of years of study, the expenditure of thousands of hours, and the aggregation of knowledge acquired through repetition, correction, and refinement. 
