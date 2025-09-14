@@ -1,4 +1,4 @@
-# DISCLAIMER OF OWNERSHIP AND 
+
 # A WORK OF CORPORATE FICTION
 
 **Fiat Justitia, Ruat Caelum:** This creation is the **most valuable intellectual output** ever produced by its author.  
