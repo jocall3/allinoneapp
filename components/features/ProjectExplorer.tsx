@@ -1,20 +1,17 @@
-
 import React, { useState, useEffect } from 'react';
-// FIX: Renamed useGlobalState to useAppContext
 import { useAppContext } from '../../contexts/GlobalStateContext';
 import { getRepos, getRepoTree, getFileContent } from '../../services/index';
 import type { Repo, FileNode } from '../../types';
-import { FolderIcon, DocumentIcon } from '../icons';
+import { FolderIcon, DocumentIcon, ConnectionsIcon } from '../icons';
 import { LoadingSpinner } from '../shared/index';
 
 const FileTree: React.FC<{ node: FileNode, onFileSelect: (path: string) => void }> = ({ node, onFileSelect }) => {
     const [isOpen, setIsOpen] = useState(true);
 
-    // FIX: Use isDirectory boolean property instead of non-existent type property.
     if (!node.isDirectory) {
         return (
             <div
-                className="flex items-center space-x-2 pl-4 py-1 cursor-pointer hover:bg-gray-100 rounded"
+                className="flex items-center space-x-2 pl-4 py-1 cursor-pointer hover:bg-surface-hover rounded"
                 onClick={() => onFileSelect(node.path)}
             >
                 <DocumentIcon />
@@ -26,14 +23,13 @@ const FileTree: React.FC<{ node: FileNode, onFileSelect: (path: string) => void 
     return (
         <div>
             <div
-                className="flex items-center space-x-2 py-1 cursor-pointer hover:bg-gray-100 rounded"
+                className="flex items-center space-x-2 py-1 cursor-pointer hover:bg-surface-hover rounded"
                 onClick={() => setIsOpen(!isOpen)}
             >
                 <div className={`transform transition-transform ${isOpen ? 'rotate-90' : ''}`}>▶</div>
                 <FolderIcon />
                 <span className="font-semibold">{node.name}</span>
             </div>
-            {/* FIX: Check for children array before attempting to map over it. */}
             {isOpen && node.children && (
                 <div className="pl-4 border-l border-border ml-3">
                     {node.children.map(child => <FileTree key={child.path} node={child} onFileSelect={onFileSelect} />)}
@@ -45,14 +41,14 @@ const FileTree: React.FC<{ node: FileNode, onFileSelect: (path: string) => void 
 
 export const ProjectExplorer: React.FC = () => {
     const { state, dispatch } = useAppContext();
-    const { githubToken, selectedRepo, projectFiles } = state;
+    const { isGithubConnected, githubToken, selectedRepo, projectFiles } = state;
     const [repos, setRepos] = useState<Repo[]>([]);
     const [isLoading, setIsLoading] = useState<'repos' | 'tree' | null>(null);
     const [error, setError] = useState('');
     const [activeFileContent, setActiveFileContent] = useState<string | null>(null);
 
     useEffect(() => {
-        if (githubToken) {
+        if (isGithubConnected) {
             setIsLoading('repos');
             setError('');
             getRepos()
@@ -62,10 +58,10 @@ export const ProjectExplorer: React.FC = () => {
         } else {
             setRepos([]);
         }
-    }, [githubToken]);
+    }, [isGithubConnected]);
 
     useEffect(() => {
-        if (selectedRepo && githubToken) {
+        if (selectedRepo && isGithubConnected) {
             setIsLoading('tree');
             setError('');
             setActiveFileContent(null);
@@ -74,7 +70,7 @@ export const ProjectExplorer: React.FC = () => {
                 .catch(err => setError(err.message))
                 .finally(() => setIsLoading(null));
         }
-    }, [selectedRepo, githubToken, dispatch]);
+    }, [selectedRepo, isGithubConnected, dispatch]);
 
     const handleFileSelect = async (path: string) => {
         if (!selectedRepo) return;
@@ -86,12 +82,21 @@ export const ProjectExplorer: React.FC = () => {
         }
     };
     
-    if (!githubToken) {
+    // FIX: Show a clear message and action if not connected to GitHub.
+    if (!isGithubConnected) {
         return (
-            <div className="h-full flex flex-col items-center justify-center text-center text-text-secondary p-4">
-                <FolderIcon />
-                <h2 className="text-lg font-semibold mt-2">Connect to GitHub</h2>
-                <p>Please go to the "Connections" tab and provide a Personal Access Token to explore your repositories.</p>
+            <div className="h-full flex flex-col items-center justify-center text-center text-text-secondary p-8">
+                <ConnectionsIcon className="w-16 h-16 text-primary" />
+                <h2 className="text-xl font-bold mt-4 text-text-primary">Connect to GitHub</h2>
+                <p className="mt-2 max-w-sm">
+                    To explore your repositories, please connect your GitHub account using a Personal Access Token.
+                </p>
+                <button 
+                    onClick={() => dispatch({ type: 'LAUNCH_FEATURE', payload: { featureId: 'connections' } })}
+                    className="btn-primary mt-6"
+                >
+                    Go to Connections
+                </button>
             </div>
         );
     }
@@ -109,11 +114,11 @@ export const ProjectExplorer: React.FC = () => {
                         }}
                         className="w-full p-2 bg-surface border border-border rounded-md text-sm"
                     >
-                        <option value="" disabled>{isLoading === 'repos' ? 'Loading...' : 'Select a repository'}</option>
+                        <option value="" disabled>{isLoading === 'repos' ? 'Loading Repos...' : 'Select a repository'}</option>
                         {repos.map(r => <option key={r.id} value={r.full_name}>{r.full_name}</option>)}
                     </select>
                 </div>
-                {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
+                {error && <p className="text-danger text-xs mt-2">{error}</p>}
             </header>
             <div className="flex-grow flex min-h-0">
                 <aside className="w-1/3 bg-background border-r border-border p-4 overflow-y-auto">
