@@ -14,7 +14,7 @@ The `components` folder is the foundry where the user's reality is forged. `serv
 
 ***
 
-### Patent Pending: The Modularity Integrity Axiom
+###  The Modularity Integrity Axiom
 
 **Claim 1: A formal method for quantifying architectural purity.** The integrity of a system's architecture, denoted as **Ψ**, can be measured by the ratio of intra-module dependencies to inter-module dependencies, weighted by the cyclomatic complexity of each connection.
 
