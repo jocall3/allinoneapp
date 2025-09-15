@@ -122,6 +122,13 @@ const reducer = (state: AppState, action: Action): AppState => {
             return { ...state, searchResults: action.payload };
         case 'TOGGLE_DASHBOARD':
             return { ...state, isDashboardVisible: !state.isDashboardVisible };
+       // KEEP ALL EXISTING CODE, AND ADD THESE LINES:
+// 1. Add `isTerminalOpen: boolean;` to the `AppState` interface.
+// 2. Add `| { type: 'TOGGLE_TERMINAL' }` to the `Action` type union.
+// 3. Add this case to the reducer:
+         case 'TOGGLE_TERMINAL':
+            return { ...state, isTerminalOpen: !state.isTerminalOpen };
+// 4. Ensure `isTerminalOpen: false` is in the `initialState`.     
         case 'SET_DASHBOARD_LOADING':
             return { ...state, isDashboardLoading: action.payload };
         case 'SET_DASHBOARD_DATA':
