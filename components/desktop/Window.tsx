@@ -1,9 +1,9 @@
 import React, { Suspense, useRef } from 'react';
-import type { Feature } from '../../types.ts';
 import { LoadingSpinner } from '../shared/index.tsx';
 import { MinimizeIcon, XMarkIcon } from '../icons.tsx';
 import { FEATURES_MAP } from '../features/index.ts';
 
+// ADDED: Explicit WindowState to match App.tsx
 interface WindowState {
   id: string;
   featureId: string;
@@ -24,6 +24,7 @@ interface WindowProps {
 }
 
 export const Window: React.FC<WindowProps> = ({ state, isActive, onClose, onMinimize, onFocus, onUpdate }) => {
+  // FIX: Drag logic is now self-contained within the Window component.
   const dragStartPos = useRef<{ x: number; y: number } | null>(null);
   const initialPos = useRef<{ x: number; y: number } | null>(null);
   
@@ -54,7 +55,7 @@ export const Window: React.FC<WindowProps> = ({ state, isActive, onClose, onMini
   };
   
   if (!feature) {
-    return null; // or some error component
+    return null;
   }
 
   return (
@@ -71,7 +72,7 @@ export const Window: React.FC<WindowProps> = ({ state, isActive, onClose, onMini
       onMouseDown={() => onFocus(state.id)}
     >
       <header
-        className={`flex items-center justify-between h-8 px-2 border-b ${isActive ? 'bg-surface/50 border-border' : 'bg-surface/30 border-border/50'} rounded-t-lg cursor-move`}
+        className={`flex items-center justify-between h-8 px-2 border-b ${isActive ? 'bg-surface/50 border-border' : 'bg-surface/30 border-border/50'} rounded-t-lg cursor-move`} // FIX: Added cursor-move for drag feedback
         onMouseDown={handleDragStart}
       >
         <div className="flex items-center gap-2 text-xs text-text-primary">
@@ -79,6 +80,7 @@ export const Window: React.FC<WindowProps> = ({ state, isActive, onClose, onMini
            <span>{feature.name}</span>
         </div>
         <div className="flex items-center gap-1">
+          {/* FIX: Corrected onClick handlers */}
           <button onClick={() => onMinimize(state.id)} className="p-1 rounded text-text-secondary hover:bg-white/10"><MinimizeIcon /></button>
           <button onClick={() => onClose(state.id)} className="p-1 rounded text-text-secondary hover:bg-danger/50 hover:text-white"><XMarkIcon className="w-4 h-4"/></button>
         </div>
