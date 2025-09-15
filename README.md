@@ -1,6 +1,6 @@
 
 # A WORK OF CORPORATE FICTION
-
+# still learning react started april 26 2025 
 ---
 
 [▶️ Open in NotebookLM](https://notebooklm.google.com/notebook/2f4045e2-a111-449f-9b8f-f8d1b201ab66?artifactId=0a2e597d-9307-4d27-9664-90f21a29ff4f)
