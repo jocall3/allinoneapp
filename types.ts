@@ -1,4 +1,5 @@
 import React from 'react';
+import * as icons from 'lucide-react';
 
 // Represents the serializable file metadata stored in IndexedDB.
 // It purposefully omits the non-serializable `handle`.
@@ -21,7 +22,6 @@ export interface FileNode extends StorableFileNode {
   children?: FileNode[];
 }
 
-// FIX: This type was too restrictive. It's used for feature navigation as well.
 export type ViewType = string;
 
 export type SortField = 'name' | 'size' | 'modified';
@@ -90,12 +90,15 @@ export interface Repo {
   owner: User;
 }
 
+export type IconName = keyof typeof icons;
+
+
 // For features system
 export interface Feature {
   id: string;
   name: string;
   description: string;
-  icon: React.ReactNode;
+  icon: IconName;
   category: string;
   component?: React.FC<any>; // Lazy-loaded component
   aiConfig?: {
@@ -108,7 +111,7 @@ export type FeatureId = string;
 export interface SidebarItem {
   id: string;
   label: string;
-  icon: React.ReactNode;
+  icon: IconName;
   view: ViewType;
   props?: any;
   action?: () => void;
@@ -189,156 +192,151 @@ export interface PageHandlers {
 
 
 // --- OmniStruct Types ---
-interface FunctionBlock {
+export interface FunctionBlock {
   [key: string]: string;
 }
 
-interface Purpose {
+export interface Purpose {
   description: string;
   functions: FunctionBlock;
 }
 
-interface Plan {
-  milestones: Record<string, string>;
+export interface Plan {
+  milestones: { [key: string]: string };
   functions: FunctionBlock;
 }
 
-interface Instructions {
+export interface Instructions {
   steps: string[];
   functions: FunctionBlock;
 }
 
-interface UseCases {
+export interface UseCases {
   scenarios: string[];
   functions: FunctionBlock;
 }
 
-interface Logic {
+export interface Logic {
   description: string;
-  decisionTrees: Record<string, string>;
+  decisionTrees: { [key: string]: string };
   functions: FunctionBlock;
 }
 
-interface Classification {
+export interface Classification {
   riskCategories: string[];
   functions: FunctionBlock;
 }
 
-interface SecurityLevel {
-  level: string;
+export interface SecurityLevel {
+  level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   encryptionProtocols: string[];
   functions: FunctionBlock;
 }
 
-interface Ownership {
+export interface Ownership {
   currentOwner: string;
   authorizedEntities: string[];
   functions: FunctionBlock;
 }
 
-interface Version {
+export interface ChangeLogEntry {
   version: string;
   changes: string;
 }
 
-interface Versioning {
+export interface Versioning {
   currentVersion: string;
-  changeLog: Version[];
+  changeLog: ChangeLogEntry[];
   functions: FunctionBlock;
 }
 
-interface IntegrationPoints {
+export interface IntegrationPoints {
   externalAPIs: string[];
   functions: FunctionBlock;
 }
 
-interface ResourceLinks {
+export interface ResourceLinks {
   documentation: string;
   datasetRepo: string;
   functions: FunctionBlock;
 }
 
-interface Dependencies {
+export interface Dependencies {
   requiredLibraries: string[];
   hardwareRequirements: string[];
   functions: FunctionBlock;
 }
 
-interface PerformanceMetrics {
-  currentPerformance: Record<string, string | number>;
+export interface PerformanceMetrics {
+  currentPerformance: { [key: string]: string };
   functions: FunctionBlock;
 }
 
-interface AITrainingParameters {
-  hyperparameters: Record<string, string | number>;
+export interface AITrainingParameters {
+  hyperparameters: { [key: string]: any };
   functions: FunctionBlock;
 }
 
-interface TestingDatasets {
+export interface TestingDatasets {
   availableDatasets: string[];
   functions: FunctionBlock;
 }
 
-interface AccessControl {
-  entity: string;
-  permissions: string;
-}
-
-interface Permissions {
-  accessControls: AccessControl[];
+export interface Permissions {
+  accessControls: string[];
   functions: FunctionBlock;
 }
 
-interface RevocationProtocols {
-  strategy: string;
+export interface RevocationProtocols {
+  strategy: 'Manual' | 'Automatic' | 'Scheduled';
   functions: FunctionBlock;
 }
 
-interface RollbackPoint {
-  timestamp: string;
-  versionRef: string;
-}
-
-interface RollbackMechanisms {
-  rollbackPoints: RollbackPoint[];
+export interface RollbackMechanisms {
+  rollbackPoints: string[];
   functions: FunctionBlock;
 }
 
-interface AuditRecord {
-  action: string;
-  time: string;
-  performedBy: string;
-}
-
-interface AuditLogs {
-  records: AuditRecord[];
+export interface AuditLogs {
+  records: string[];
   functions: FunctionBlock;
 }
 
-interface CodeExamples {
-  sampleSnippets: Record<string, string>;
+export interface CodeExamples {
+  sampleSnippets: { [key: string]: string };
   functions: FunctionBlock;
 }
 
 export interface OmniStruct {
-  Purpose: Purpose;
-  Plan: Plan;
-  Instructions: Instructions;
-  UseCases: UseCases;
-  Logic: Logic;
-  Classification: Classification;
-  SecurityLevel: SecurityLevel;
-  Ownership: Ownership;
-  Versioning: Versioning;
-  IntegrationPoints: IntegrationPoints;
-  ResourceLinks: ResourceLinks;
-  Dependencies: Dependencies;
-  PerformanceMetrics: PerformanceMetrics;
-  AITrainingParameters: AITrainingParameters;
-  TestingDatasets: TestingDatasets;
-  Permissions: Permissions;
-  RevocationProtocols: RevocationProtocols;
-  RollbackMechanisms: RollbackMechanisms;
-  AuditLogs: AuditLogs;
-  CodeExamples: CodeExamples;
+  Purpose: { description: string; functions: { updateDescription: string; getPurpose: string; } };
+  Plan: { milestones: { [key: string]: string }; functions: { getPlanDetails: string; addMilestone: string; } };
+  Instructions: { steps: string[]; functions: { getSteps: string; addStep: string; } };
+  UseCases: { scenarios: string[]; functions: { getScenarios: string; addScenario: string; } };
+  Logic: { description: string; decisionTrees: { [key: string]: string }; functions: { getDecisionTrees: string; runHeuristics: string; } };
+  Classification: { riskCategories: string[]; functions: { classify: string; getRiskCategories: string; } };
+  SecurityLevel: { level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'; encryptionProtocols: string[]; functions: { setSecurityLevel: string; getSecurityLevel: string; } };
+  Ownership: { currentOwner: string; authorizedEntities: string[]; functions: { transferOwnership: string; getOwnershipDetails: string; } };
+  Versioning: { currentVersion: string; changeLog: ChangeLogEntry[]; functions: { createNewVersion: string; getVersionHistory: string; } };
+  IntegrationPoints: { externalAPIs: string[]; functions: { listIntegrationPoints: string; addIntegrationPoint: string; } };
+  ResourceLinks: { documentation: string; datasetRepo: string; functions: { getResourceLinks: string; updateResourceLink: string; } };
+  Dependencies: { requiredLibraries: string[]; hardwareRequirements: string[]; functions: { listDependencies: string; addDependency: string; } };
+  PerformanceMetrics: { currentPerformance: { [key: string]: string }; functions: { getPerformanceMetrics: string; logPerformanceMetric: string; } };
+  AITrainingParameters: { hyperparameters: { [key: string]: any }; functions: { getTrainingParams: string; setTrainingParams: string; } };
+  TestingDatasets: { availableDatasets: string[]; functions: { listDatasets: string; addDataset: string; } };
+  Permissions: { accessControls: string[]; functions: { grantPermission: string; checkPermission: string; } };
+  RevocationProtocols: { strategy: 'Manual' | 'Automatic' | 'Scheduled'; functions: { setRevocationStrategy: string; getRevocationStrategy: string; } };
+  RollbackMechanisms: { rollbackPoints: string[]; functions: { createRollbackPoint: string; listRollbackPoints: string; } };
+  AuditLogs: { records: string[]; functions: { getAuditLogs: string; logAuditEvent: string; } };
+  CodeExamples: { sampleSnippets: { [key: string]: string }; functions: { getCodeExample: string; addCodeExample: string; } };
+}
+
+// --- Window Manager Types ---
+export interface WindowState {
+  id: string;
+  featureId: string;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  zIndex: number;
+  isMinimized: boolean;
+  props?: any;
 }

@@ -14,7 +14,7 @@ This is no mere Foreign Function Interface; it is a state of quantum entanglemen
 
 ***
 
-### The Aetheric Entanglement Equation
+### Patent Pending: The Aetheric Entanglement Equation
 
 **Claim 1: A state function describing the quantum-like connection between Wasm and JS.** The state of an object, **ψ**, existing across both the WebAssembly (**W**) and JavaScript (**H**) runtimes is a superposition until observed by either. Its state is described by the Aetheric Wave Function.
 

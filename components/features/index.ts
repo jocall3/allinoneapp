@@ -2,11 +2,9 @@ import React from 'react';
 import type { Feature } from '../../types.ts';
 import { RAW_FEATURES } from '../../constants.ts';
 import { lazyWithRetry } from '../../services/index.ts';
-// FIX: The placeholder is no longer needed as all features will be implemented.
-// import { PlaceholderFeature } from './shared/PlaceholderFeature.tsx';
 
 // A map of feature IDs to their lazy-loaded component import function and export name.
-// This only includes features that have an actual implementation.
+// Every feature defined in constants.ts is now implemented and wired up here.
 const implementedFeatures: Record<string, { loader: () => Promise<{ [key: string]: React.FC<any> }>, exportName: string }> = {
     'ai-command-center': { loader: () => import('./AiCommandCenter.tsx'), exportName: 'AiCommandCenter' },
     'project-explorer': { loader: () => import('./ProjectExplorer.tsx'), exportName: 'ProjectExplorer' },
@@ -53,6 +51,7 @@ const implementedFeatures: Record<string, { loader: () => Promise<{ [key: string
     'ai-story-scaffolding': { loader: () => import('./AiStoryScaffolding.tsx'), exportName: 'AiStoryScaffolding' },
     'omnistruct-framework': { loader: () => import('./OmniStructFramework.tsx'), exportName: 'OmniStructFramework' },
     'alchemy-studio': { loader: () => import('../../alchemy/AlchemyStudio.tsx'), exportName: 'AlchemyStudio' },
+    'project-dissertations': { loader: () => import('./ProjectDissertations.tsx'), exportName: 'ProjectDissertations' },
     'context-aware-command-suggestions': { loader: () => import('./ContextAwareCommandSuggestions.tsx'), exportName: 'ContextAwareCommandSuggestions' },
     'natural-language-workflow-chaining': { loader: () => import('./NaturalLanguageWorkflowChaining.tsx'), exportName: 'NaturalLanguageWorkflowChaining' },
     'voice-command-integration': { loader: () => import('./VoiceCommandIntegration.tsx'), exportName: 'VoiceCommandIntegration' },
@@ -102,15 +101,25 @@ const implementedFeatures: Record<string, { loader: () => Promise<{ [key: string
     'generate-api-documentation': { loader: () => import('./AutomatedApiDocumentation.tsx'), exportName: 'AutomatedApiDocumentation' },
     'automated-code-commenting': { loader: () => import('./AutomatedCodeCommenting.tsx'), exportName: 'AutomatedCodeCommenting' },
     'automated-environment-setup-assistant': { loader: () => import('./AutomatedEnvironmentSetup.tsx'), exportName: 'AutomatedEnvironmentSetup' },
-    // Second batch of 50 new features
+    'ai-driven-content-tagging': { loader: () => import('./AiDrivenContentTagging.tsx'), exportName: 'AiDrivenContentTagging' },
     'semantic-search-with-natural-language-filters': { loader: () => import('./SemanticSearchWithNaturalLanguageFilters.tsx'), exportName: 'SemanticSearchWithNaturalLanguageFilters' },
+    'ai-generated-file-summaries': { loader: () => import('./AiGeneratedFileSummaries.tsx'), exportName: 'AiGeneratedFileSummaries' },
+    'explain-this-folder-with-project-context': { loader: () => import('./ExplainThisFolderWithProjectContext.tsx'), exportName: 'ExplainThisFolderWithProjectContext' },
     'content-based-deduplication': { loader: () => import('./ContentBasedDeduplication.tsx'), exportName: 'ContentBasedDeduplication' },
     'predictive-file-placement': { loader: () => import('./PredictiveFilePlacement.tsx'), exportName: 'PredictiveFilePlacement' },
+    'version-history-summarization': { loader: () => import('./VersionHistorySummarization.tsx'), exportName: 'VersionHistorySummarization' },
+    'automated-metadata-extraction': { loader: () => import('./AutomatedMetadataExtraction.tsx'), exportName: 'AutomatedMetadataExtraction' },
+    'visual-file-relationship-mapping': { loader: () => import('./VisualFileRelationshipMapping.tsx'), exportName: 'VisualFileRelationshipMapping' },
+    'ai-driven-project-health-reports': { loader: () => import('./AiDrivenProjectHealthReports.tsx'), exportName: 'AiDrivenProjectHealthReports' },
+    'ai-powered-file-type-conversion': { loader: () => import('./AiPoweredFileTypeConversion.tsx'), exportName: 'AiPoweredFileTypeConversion' },
+    'ai-assisted-debugging': { loader: () => import('./AiPoweredCodeDebugger.tsx'), exportName: 'AiPoweredCodeDebugger' },
     'semantic-code-search': { loader: () => import('./SemanticCodeSearch.tsx'), exportName: 'SemanticCodeSearch' },
     'ai-driven-api-client-generation': { loader: () => import('./AiDrivenApiClientGeneration.tsx'), exportName: 'AiDrivenApiClientGeneration' },
     'ai-driven-data-transformation-pipelines': { loader: () => import('./AiDataTransformation.tsx'), exportName: 'AiDataTransformation' },
     'ai-driven-meeting-agenda-generation': { loader: () => import('./AiDrivenMeetingAgendaGeneration.tsx'), exportName: 'AiDrivenMeetingAgendaGeneration' },
+    'summarize-my-day-report': { loader: () => import('./SummarizeMyDayReport.tsx'), exportName: 'SummarizeMyDayReport' },
     'ai-driven-time-management-suggestions': { loader: () => import('./AiDrivenTimeManagementSuggestions.tsx'), exportName: 'AiDrivenTimeManagementSuggestions' },
+    'automated-project-status-reporting': { loader: () => import('./AutomatedProjectStatusReporting.tsx'), exportName: 'AutomatedProjectStatusReporting' },
     'ai-driven-learning-path-suggestions': { loader: () => import('./AiDrivenLearningPathSuggestions.tsx'), exportName: 'AiDrivenLearningPathSuggestions' },
     'ai-driven-project-budget-estimation': { loader: () => import('./AiDrivenProjectBudgetEstimation.tsx'), exportName: 'AiDrivenProjectBudgetEstimation' },
     'ai-powered-what-if-scenario-analysis': { loader: () => import('./AiPoweredWhatIfScenarioAnalysis.tsx'), exportName: 'AiPoweredWhatIfScenarioAnalysis' },
@@ -118,6 +127,7 @@ const implementedFeatures: Record<string, { loader: () => Promise<{ [key: string
     'ai-driven-backup-strategy': { loader: () => import('./AiDrivenBackupStrategy.tsx'), exportName: 'AiDrivenBackupStrategy' },
     'ai-powered-system-health-monitoring': { loader: () => import('./AiPoweredSystemHealthMonitoring.tsx'), exportName: 'AiPoweredSystemHealthMonitoring' },
     'ai-driven-data-migration': { loader: () => import('./AiDrivenDataMigration.tsx'), exportName: 'AiDrivenDataMigration' },
+    'automated-security-audit': { loader: () => import('./AutomatedSecurityAudit.tsx'), exportName: 'AutomatedSecurityAudit' },
     'ai-powered-smart-notifications': { loader: () => import('./AiPoweredSmartNotifications.tsx'), exportName: 'AiPoweredSmartNotifications' },
     'ai-driven-data-privacy-impact-assessment': { loader: () => import('./AiDataPrivacyImpact.tsx'), exportName: 'AiDataPrivacyImpact' },
     'ai-driven-cost-optimization-for-cloud': { loader: () => import('./AiDrivenCostOptimizationForCloud.tsx'), exportName: 'AiDrivenCostOptimizationForCloud' },
@@ -132,6 +142,7 @@ const implementedFeatures: Record<string, { loader: () => Promise<{ [key: string
     'ai-powered-who-should-review-this-suggestion': { loader: () => import('./AiPoweredWhoShouldReviewThisSuggestion.tsx'), exportName: 'AiPoweredWhoShouldReviewThisSuggestion' },
     'generate-project-brief-command': { loader: () => import('./GenerateProjectBriefCommand.tsx'), exportName: 'GenerateProjectBriefCommand' },
     'ai-driven-creative-remix-tool': { loader: () => import('./AiDrivenCreativeRemixTool.tsx'), exportName: 'AiDrivenCreativeRemixTool' },
+    'ai-powered-generate-a-story': { loader: () => import('./AiPoweredGenerateAStory.tsx'), exportName: 'AiPoweredGenerateAStory' },
     'generate-music-sound-effects': { loader: () => import('./GenerateMusicSoundEffects.tsx'), exportName: 'GenerateMusicSoundEffects' },
     'ai-driven-generate-3d-model': { loader: () => import('./AiDrivenGenerate3dModel.tsx'), exportName: 'AiDrivenGenerate3dModel' },
     'generate-a-poem-song-lyrics': { loader: () => import('./GenerateAPoemSongLyrics.tsx'), exportName: 'GenerateAPoemSongLyrics' },
@@ -139,9 +150,16 @@ const implementedFeatures: Record<string, { loader: () => Promise<{ [key: string
     'ai-powered-generate-a-research-paper-outline': { loader: () => import('./AiPoweredGenerateAResearchPaperOutline.tsx'), exportName: 'AiPoweredGenerateAResearchPaperOutline' },
     'ai-driven-privacy-advisor-for-file-sharing': { loader: () => import('./AiDrivenPrivacyAdvisorForFileSharing.tsx'), exportName: 'AiDrivenPrivacyAdvisorForFileSharing' },
     'ai-powered-ethical-dilemma-simulator': { loader: () => import('./AiPoweredEthicalDilemmaSimulator.tsx'), exportName: 'AiPoweredEthicalDilemmaSimulator' },
-    // Final batch of 50 features
     'ai-driven-tutorial-onboarding': { loader: () => import('./AiDrivenTutorialOnboarding.tsx'), exportName: 'AiDrivenTutorialOnboarding' },
     'whats-new-here-summary': { loader: () => import('./WhatsNewHereSummary.tsx'), exportName: 'WhatsNewHereSummary' },
+    'ai-assisted-file-tagging-for-compliance': { loader: () => import('./AiAssistedFileTaggingForCompliance.tsx'), exportName: 'AiAssistedFileTaggingForCompliance' },
+    'dynamic-file-icon-generation': { loader: () => import('./DynamicFileIconGeneration.tsx'), exportName: 'DynamicFileIconGeneration' },
+    'why-is-this-file-here-explanation': { loader: () => import('./WhyIsThisFileHereExplanation.tsx'), exportName: 'WhyIsThisFileHereExplanation' },
+    'refactor-this-file-command': { loader: () => import('./RefactorThisFileCommand.tsx'), exportName: 'RefactorThisFileCommand' },
+    'generate-icon-set-command': { loader: () => import('./GenerateIconSetCommand.tsx'), exportName: 'GenerateIconSetCommand' },
+    'troubleshoot-connection-assistant': { loader: () => import('./TroubleshootConnectionAssistant.tsx'), exportName: 'TroubleshootConnectionAssistant' },
+    'clean-up-old-projects-assistant': { loader: () => import('./CleanUpOldProjectsAssistant.tsx'), exportName: 'CleanUpOldProjectsAssistant' },
+    'whats-new-in-this-update-summary': { loader: () => import('./WhatsNewInThisUpdateSummary.tsx'), exportName: 'WhatsNewInThisUpdateSummary' },
     'ai-driven-feedback-loop-for-model-improvement': { loader: () => import('./AiDrivenFeedbackLoopForModelImprovement.tsx'), exportName: 'AiDrivenFeedbackLoopForModelImprovement' },
     'personalized-ui-theme-generation': { loader: () => import('./PersonalizedUiThemeGeneration.tsx'), exportName: 'PersonalizedUiThemeGeneration' },
     'ai-powered-walkthrough-for-complex-features': { loader: () => import('./AiPoweredWalkthroughForComplexFeatures.tsx'), exportName: 'AiPoweredWalkthroughForComplexFeatures' },
@@ -159,7 +177,6 @@ const implementedFeatures: Record<string, { loader: () => Promise<{ [key: string
     'ai-powered-content-authenticity-verification': { loader: () => import('./AiPoweredContentAuthenticityVerification.tsx'), exportName: 'AiPoweredContentAuthenticityVerification' },
     'automated-ai-model-explainability-reports': { loader: () => import('./AutomatedAiModelExplainabilityReports.tsx'), exportName: 'AutomatedAiModelExplainabilityReports' },
     'settings': { loader: () => import('../SettingsView.tsx'), exportName: 'SettingsView' },
-    // Round 1 of 50 new features
     'cross-application-command-integration': { loader: () => import('./CrossApplicationCommandIntegration.tsx'), exportName: 'CrossApplicationCommandIntegration' },
     'undo-last-ai-action': { loader: () => import('./UndoLastAiAction.tsx'), exportName: 'UndoLastAiAction' },
     'personalized-shortcut-learning': { loader: () => import('./PersonalizedShortcutLearning.tsx'), exportName: 'PersonalizedShortcutLearning' },
@@ -234,21 +251,27 @@ const implementedFeatures: Record<string, { loader: () => Promise<{ [key: string
     'model-evaluation-report-generator': { loader: () => import('./ModelEvaluationReportGenerator.tsx'), exportName: 'ModelEvaluationReportGenerator' },
     'ai-ethics-statement-drafter': { loader: () => import('./AiEthicsStatementDrafter.tsx'), exportName: 'AiEthicsStatementDrafter' },
     'synthetic-data-generator': { loader: () => import('./SyntheticDataGenerator.tsx'), exportName: 'SyntheticDataGenerator' },
+    'ai-powered-file-preview-customization': { loader: () => import('./AiPoweredFilePreviewCustomization.tsx'), exportName: 'AiPoweredFilePreviewCustomization' },
+    'ai-driven-ui-customization-suggestions': { loader: () => import('./AiDrivenUiCustomizationSuggestions.tsx'), exportName: 'AiDrivenUiCustomizationSuggestions' },
+    'explain-my-data-usage-report': { loader: () => import('./ExplainMyDataUsageReport.tsx'), exportName: 'ExplainMyDataUsageReport' },
+    'automated-ai-model-audit-trail': { loader: () => import('./AutomatedAiModelAuditTrail.tsx'), exportName: 'AutomatedAiModelAuditTrail' },
+    'user-controlled-ai-forget-me-functionality': { loader: () => import('./UserControlledAiForgetTarget.tsx'), exportName: 'UserControlledAiForgetTarget' },
+    'ai-driven-digital-wellbeing-monitoring': { loader: () => import('./AiDrivenDigitalWellbeingMonitoring.tsx'), exportName: 'AiDrivenDigitalWellbeingMonitoring' },
+    'dynamic-file-grouping': { loader: () => import('./DynamicFileGrouping.tsx'), exportName: 'DynamicFileGrouping' },
+    'ai-powered-generate-a-story': { loader: () => import('./AiPoweredGenerateAStory.tsx'), exportName: 'AiPoweredGenerateAStory' },
+    'ai-powered-generate-a-poem-song-lyrics': { loader: () => import('./GenerateAPoemSongLyrics.tsx'), exportName: 'GenerateAPoemSongLyrics' },
+    'ai-powered-generate-a-research-paper-outline': { loader: () => import('./AiPoweredGenerateAResearchPaperOutline.tsx'), exportName: 'AiPoweredGenerateAResearchPaperOutline' },
 };
 
-// Dynamically build the component map, using placeholders for unimplemented features.
+// Dynamically build the component map
 const componentMap: Record<string, React.FC<any>> = {};
 RAW_FEATURES.forEach(feature => {
     if (implementedFeatures[feature.id]) {
         const { loader, exportName } = implementedFeatures[feature.id];
         componentMap[feature.id] = lazyWithRetry(loader, exportName);
     } else {
-        // This is now a fallback for any new features added to constants.ts without an implementation.
-        // During this major update, every feature should have an implementation.
-        console.warn(`Feature "${feature.name}" (${feature.id}) is not implemented. A placeholder will be used.`);
-        // To prevent crashes, you can add the placeholder back if needed, but the goal is full implementation.
-        // componentMap[feature.id] = PlaceholderFeature;
-        // For this release, we assume all are implemented. If one is missing, it will error, which is intended.
+        // This case should now be rare, but is kept as a safeguard.
+        console.error(`FATAL: Feature "${feature.name}" (${feature.id}) is defined in constants.ts but has no implementation in features/index.ts.`);
     }
 });
 
@@ -269,14 +292,13 @@ const aiConfigMap: Record<string, Feature['aiConfig']> = {
     'visual-git-tree': { model: 'gemini-2.5-flash' },
     'worker-thread-debugger': { model: 'gemini-2.5-flash' },
     'ai-command-center': { model: 'gemini-2.5-flash' },
-    // FIX: Use the correct model for image generation
     'ai-image-generator': { model: 'imagen-4.0-generate-001' },
     'audio-to-code': { model: 'gemini-2.5-flash' },
     'color-palette-generator': { model: 'gemini-2.5-flash' },
     'xbrl-converter': { model: 'gemini-2.5-flash' },
     'digital-whiteboard': { model: 'gemini-2.5-flash' },
     'project-explorer': { model: 'gemini-2.5-flash' },
-    'ai-story-scaffolding': { model: 'gemini-2.5-flash' }, // Add config for the new feature
+    'ai-story-scaffolding': { model: 'gemini-2.5-flash' },
     'omnistruct-framework': { model: 'gemini-2.5-flash' },
 };
 

@@ -1,32 +1,23 @@
 import React, { Suspense, useRef } from 'react';
-import { LoadingSpinner } from '../shared/index.tsx';
-import { MinimizeIcon, XMarkIcon } from '../icons.tsx';
+import type { WindowState } from '../../types.ts';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
+import Icon from '../ui/Icon';
 import { FEATURES_MAP } from '../features/index.ts';
-
-// ADDED: Explicit WindowState to match App.tsx
-interface WindowState {
-  id: string;
-  featureId: string;
-  position: { x: number; y: number };
-  size: { width: number; height: number };
-  zIndex: number;
-  isMinimized: boolean;
-  props?: any;
-}
+import { useAppStore } from '../../store/useAppStore.ts';
 
 interface WindowProps {
   state: WindowState;
-  isActive: boolean;
   onClose: (id: string) => void;
   onMinimize: (id: string) => void;
   onFocus: (id: string) => void;
   onUpdate: (id: string, updates: Partial<WindowState>) => void;
 }
 
-export const Window: React.FC<WindowProps> = ({ state, isActive, onClose, onMinimize, onFocus, onUpdate }) => {
-  // FIX: Drag logic is now self-contained within the Window component.
+export const Window: React.FC<WindowProps> = ({ state, onClose, onMinimize, onFocus, onUpdate }) => {
   const dragStartPos = useRef<{ x: number; y: number } | null>(null);
   const initialPos = useRef<{ x: number; y: number } | null>(null);
+  const activeId = useAppStore(s => s.activeWindowId);
+  const isActive = state.id === activeId;
   
   const feature = FEATURES_MAP.get(state.featureId);
   const FeatureComponent = feature?.component;
@@ -55,6 +46,7 @@ export const Window: React.FC<WindowProps> = ({ state, isActive, onClose, onMini
   };
   
   if (!feature) {
+    console.error(`Feature not found for id: ${state.featureId}`);
     return null;
   }
 
@@ -72,17 +64,16 @@ export const Window: React.FC<WindowProps> = ({ state, isActive, onClose, onMini
       onMouseDown={() => onFocus(state.id)}
     >
       <header
-        className={`flex items-center justify-between h-8 px-2 border-b ${isActive ? 'bg-surface/50 border-border' : 'bg-surface/30 border-border/50'} rounded-t-lg cursor-move`} // FIX: Added cursor-move for drag feedback
+        className={`flex items-center justify-between h-8 px-2 border-b ${isActive ? 'bg-surface/50 border-border' : 'bg-surface/30 border-border/50'} rounded-t-lg cursor-move`}
         onMouseDown={handleDragStart}
       >
         <div className="flex items-center gap-2 text-xs text-text-primary">
-           <div className="w-4 h-4 text-primary">{feature.icon}</div>
+           <Icon name={feature.icon} className="w-4 h-4 text-primary" />
            <span>{feature.name}</span>
         </div>
         <div className="flex items-center gap-1">
-          {/* FIX: Corrected onClick handlers */}
-          <button onClick={() => onMinimize(state.id)} className="p-1 rounded text-text-secondary hover:bg-white/10"><MinimizeIcon /></button>
-          <button onClick={() => onClose(state.id)} className="p-1 rounded text-text-secondary hover:bg-danger/50 hover:text-white"><XMarkIcon className="w-4 h-4"/></button>
+          <button onClick={() => onMinimize(state.id)} className="p-1 rounded text-text-secondary hover:bg-white/10"><Icon name="Minus" size={16} /></button>
+          <button onClick={() => onClose(state.id)} className="p-1 rounded text-text-secondary hover:bg-danger/50 hover:text-white"><Icon name="X" size={16}/></button>
         </div>
       </header>
       <main className="flex-1 overflow-auto bg-background/50 rounded-b-lg">

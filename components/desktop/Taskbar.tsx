@@ -1,13 +1,7 @@
 import React from 'react';
-import type { Feature } from '../../types.ts';
+import type { WindowState } from '../../types.ts';
 import { FEATURES_MAP } from '../features/index.ts';
-
-// ADDED: WindowState type to match the data being passed
-interface WindowState {
-  id: string;
-  featureId: string;
-  isMinimized: boolean;
-}
+import Icon from '../ui/Icon.tsx';
 
 interface TaskbarProps {
   minimizedWindows: WindowState[];
@@ -21,20 +15,20 @@ export const Taskbar: React.FC<TaskbarProps> = ({ minimizedWindows, onRestore })
 
   return (
     <div className="absolute bottom-0 left-20 right-0 h-12 bg-surface/50 backdrop-blur-md border-t border-border flex items-center px-2 gap-2 z-[999]">
-      {/* FIX: Now correctly maps minimized windows to restore buttons */}
-      {minimizedWindows.map(window => {
-        const feature = FEATURES_MAP.get(window.featureId);
+      {minimizedWindows.map(win => {
+        const feature = FEATURES_MAP.get(win.featureId);
         if (!feature) return null;
+
         return (
-            <button
-            key={window.id}
-            onClick={() => onRestore(window.id)}
+          <button
+            key={win.id}
+            onClick={() => onRestore(win.id)}
             className="h-9 px-3 flex items-center gap-2 rounded-md bg-surface/70 hover:bg-surface-hover text-text-primary text-sm border border-border"
             title={`Restore ${feature.name}`}
-            >
-            <div className="w-4 h-4 text-primary">{feature.icon}</div>
+          >
+            <Icon name={feature.icon} className="w-4 h-4 text-primary" />
             <span className="truncate">{feature.name}</span>
-            </button>
+          </button>
         )
       })}
     </div>

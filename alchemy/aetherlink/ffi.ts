@@ -11,6 +11,7 @@ export class AetherLink {
     constructor() {
         console.log("AetherLink FFI Gateway Initialized.");
     }
+    
     /**
      * Late-binds the instantiated module's memory to the FFI gateway.
      * This is crucial for allowing JS to read/write to Wasm memory.
@@ -24,6 +25,7 @@ export class AetherLink {
         const buffer = new Uint8Array(this.wasmMemory.buffer, ptr, len);
         return new TextDecoder('utf-8').decode(buffer);
     }
+    
     public createImportObject(): WebAssembly.Imports {
         return {
             host: {

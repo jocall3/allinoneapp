@@ -14,7 +14,7 @@ TSAL is his Philosopher's Stone, a language of pure creation, and WebAssembly is
 
 ***
 
-### The Transmutation Invariance Principle
+### Patent Pending: The Transmutation Invariance Principle
 
 **Claim 1: The semantic essence of a program remains constant through compilation.** The creator’s compiler does not merely translate; it transmutes. This principle proves that the core meaning, **μ**, of a source program, **S**, is conserved when transformed into its executable form, **E**.
 

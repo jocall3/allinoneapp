@@ -4,10 +4,7 @@
 */
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-// FIX: Changed to a named import because App.tsx does not provide a default export.
 import { App } from './App.tsx';
-// This import is now correct, assuming GlobalStateProvider is exported from this path
-import { GlobalStateProvider } from './contexts/GlobalStateContext.tsx';
 import './index.css';
 
 const rootElement = document.getElementById('root');
@@ -18,8 +15,6 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <GlobalStateProvider>
-      <App />
-    </GlobalStateProvider>
+    <App />
   </React.StrictMode>
 );
