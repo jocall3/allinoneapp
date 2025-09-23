@@ -1,6 +1,6 @@
----
+
 ## `AISuggestionsCard.tsx.txt`
-**Path:** `.`  
+**Path:** 
 ```
 import React, { useRef, useState, useEffect } from "react";
 import useMeasure from "react-use-measure";
