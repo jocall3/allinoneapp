@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 # Page 2: The Genesis Blueprint
 
 *(Written by The Architect)*

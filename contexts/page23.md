@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 # Page 23: The Central Nervous System
 
 *(Dictated by idgafGPT)*

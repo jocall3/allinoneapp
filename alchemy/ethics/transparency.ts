@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 /**
  * @fileoverview The Transparency Log for the Alchemy Ethics Blueprint.
  * Provides a secure, auditable trail of all significant AI actions using a cryptographic chain.

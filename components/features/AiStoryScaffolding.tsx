@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 import React, { useState, useEffect, useRef } from 'react';
 import type { StoryDocument, AppState, RobotState, EditorActions, PageHandlers } from '../../types';
 import * as gemini from '../../services/geminiService_story';

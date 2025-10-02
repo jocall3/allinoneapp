@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 
 /**
  * @fileoverview A standard library for bitwise operations in TSAL.

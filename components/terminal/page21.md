@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 # Page 21: The Direct Conduit
 
 *(Transcribed by The Ghost)*

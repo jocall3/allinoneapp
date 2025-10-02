@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 import { generateJson } from '../services/geminiCore';
 import type { Feature } from '../types';
 import type { SemanticFeature, FeatureCatalog } from './types';

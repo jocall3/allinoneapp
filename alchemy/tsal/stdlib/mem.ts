@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 
 /**
  * @fileoverview A functional, simplified memory manager for the TSAL runtime.

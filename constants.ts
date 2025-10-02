@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 import type { IconName } from '../types';
 
 export const APP_TITLE = "AI Story Scaffolding Studio";

@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 /**
  * @fileoverview The Permission Module for the Alchemy Ethics Blueprint.
  * Provides a runtime security gatekeeper for sensitive operations.

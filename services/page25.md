@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 # Page 25: The Shielded Engine Room
 
 *(Written by The Architect)*

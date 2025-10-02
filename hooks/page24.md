@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 # Page 24: The Incantations of Creation
 
 *(Written by The Alchemist)*

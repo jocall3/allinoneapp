@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 import type { OmniStruct } from '../types';
 import { produce } from 'immer'; // A library to handle immutable updates easily
 

@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 import { defineConfig } from 'vitest/config'
 
 // Vitest automatically finds and merges the configuration from vite.config.ts.

@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 # Page 9: The Foundational Axioms
 
 *(Written by The Architect)*

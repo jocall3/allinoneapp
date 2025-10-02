@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 # Page 3: The Crucible of Creation
 
 *(Written by The Alchemist)*

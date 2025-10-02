@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 
 /**
  * @fileoverview Defines the core primitive and conceptual types for the TSAL language.

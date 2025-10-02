@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 import React, { useState } from 'react';
 import type { OmniStruct } from '../../types';
 import { buildOmniStruct, type OmniStructFormData } from '../../services/omniStructService';

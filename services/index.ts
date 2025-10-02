@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 // FIX: Create a comprehensive barrel file to export all service modules.
 export * from './api';
 export * from './componentLoader';

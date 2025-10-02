@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 import { describe, it, expect, vi } from 'vitest';
 
 // Mock the File System Access API which is not available in JSDOM

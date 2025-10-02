@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 # Page 12: The Opening Chapter
 
 *(Written by The Storyteller)*

@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 // @ts-ignore
 import { Octokit } from "https://esm.sh/octokit@4.0.2";
 import type { Repo, FileNode, User } from '../types.ts';

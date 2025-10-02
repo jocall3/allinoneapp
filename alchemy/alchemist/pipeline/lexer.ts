@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 
 /**
  * @fileoverview The Lexer (or Scanner/Tokenizer) for the TSAL language.

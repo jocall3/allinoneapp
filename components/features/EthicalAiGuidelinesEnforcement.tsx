@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 import React, { useState, useCallback } from 'react';
 import { detectBias } from '../../services/api'; // Reusing detectBias for this feature
 import { ShieldCheckIcon } from '../icons';

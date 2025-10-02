@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 import { describe, it, expect } from 'vitest';
 import { AetherLink } from './ffi';
 

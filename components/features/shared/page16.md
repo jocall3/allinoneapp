@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 # Page 16: The Universal Parts Bin
 
 *(Dictated by idgafGPT)*

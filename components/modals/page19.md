@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 # Page 19: The Focus Plane
 
 *(Transcribed by The Ghost)*

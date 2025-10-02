@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ai, generateContent, generateJson, streamContent } from './geminiCore';
 

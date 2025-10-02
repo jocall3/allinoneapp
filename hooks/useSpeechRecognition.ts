@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface SpeechRecognitionHook {

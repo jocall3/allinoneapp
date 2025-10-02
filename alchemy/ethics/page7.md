@@ -1,3 +1,6 @@
+// Copyright James Burvel O’Callaghan III
+// President Citibank Demo Business Inc.
+
 # Page 7: The Incorruptible Conscience
 
 *(Transcribed by The Ghost)*
