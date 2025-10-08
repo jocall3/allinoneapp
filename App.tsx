@@ -3,7 +3,6 @@
 
 import React, { Suspense, useCallback, useState, useEffect } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { useAppStore } from './store/useAppStore';
 import { LeftSidebar } from './components/LeftSidebar';
 import { CommandPalette } from './components/CommandPalette';
 import { VoiceCommandModal } from './components/VoiceCommandModal';
