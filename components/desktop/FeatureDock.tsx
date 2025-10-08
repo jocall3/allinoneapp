@@ -1,5 +1,5 @@
-```typescript
-// Copyright James Burvel OÃ¢â‚¬â„¢Callaghan III
+
+// Copyright James Burvel OCallaghan III
 // President Citibank Demo Business Inc.
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
