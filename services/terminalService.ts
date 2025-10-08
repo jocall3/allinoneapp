@@ -1,4 +1,4 @@
-// Copyright James Burvel Oâ€™Callaghan III
+// Copyright James Burvel OÃ¢â‚¬â„¢Callaghan III
 // President Citibank Demo Business Inc.
 
 
@@ -36,13 +36,14 @@ interface InternalCommandContext extends CommandContext {
 /**
  * `TerminalSession` is the core class responsible for managing the state and execution
  * of a single terminal instance. It encapsulates command history, environment variables,
- * and delegates file system operations to the appropriate services (`fss`, `db`).
+ * aliases, and delegates file system operations to the appropriate services (`fss`, `db`).
  * This design promotes testability and separation of concerns, providing a robust
  * foundation for a "market-ready" terminal experience.
  */
 export class TerminalSession {
     private history: string[] = [];
     private environment: Map<string, string> = new Map();
+    private aliases: Map<string, string> = new Map(); // New: Store command aliases
     // commandContext is the external interface provided by the UI/framework for host interactions
     private commandContext: CommandContext;
 
@@ -71,6 +72,7 @@ export class TerminalSession {
         this.environment.set('HOME', '/');
         this.environment.set('PATH', '/bin:/usr/bin'); // Mock typical PATH
         this.environment.set('TERM', 'xterm-256color'); // Indicate terminal capabilities for richer output
+        this.environment.set('HOSTNAME', 'citibank-terminal'); // Mock hostname
     }
 
     /**
@@ -87,6 +89,7 @@ export class TerminalSession {
         this.commands.set('clear', this.handleClear.bind(this));
         this.commands.set('pwd', this.handlePwd.bind(this));
         this.commands.set('help', this.handleHelp.bind(this));
+        this.commands.set('man', this.handleMan.bind(this)); // New: man command
         this.commands.set('touch', this.handleTouch.bind(this));
         this.commands.set('echo', this.handleEcho.bind(this));
         this.commands.set('mv', this.handleMv.bind(this));
@@ -94,6 +97,13 @@ export class TerminalSession {
         this.commands.set('export', this.handleExport.bind(this));
         this.commands.set('history', this.handleHistory.bind(this));
         this.commands.set('env', this.handleEnv.bind(this)); // Alias for `export`
+        this.commands.set('alias', this.handleAlias.bind(this)); // New: alias command
+        this.commands.set('unalias', this.handleUnalias.bind(this)); // New: unalias command
+        this.commands.set('which', this.handleWhich.bind(this)); // New: which command
+        this.commands.set('date', this.handleDate.bind(this)); // New: date command
+        this.commands.set('find', this.handleFind.bind(this)); // New: find command
+        this.commands.set('whoami', this.handleWhoami.bind(this)); // New: whoami command
+        this.commands.set('hostname', this.handleHostname.bind(this)); // New: hostname command
     }
 
     /**
@@ -360,6 +370,18 @@ export class TerminalSession {
     }
 
     /**
+     * Implements the `man` command: Provides detailed manual pages for commands.
+     * Currently aliases to `help <command>`.
+     */
+    private async handleMan(context: InternalCommandContext, args: string[]): Promise<string> {
+        if (args.length === 0) {
+            return 'What manual page do you want? Try `man man` for information about man itself.';
+        }
+        // For now, `man` is an alias to `help` for detailed descriptions.
+        return this.handleHelp(context, args);
+    }
+
+    /**
      * Implements the `touch` command: Changes file timestamps or creates empty files.
      */
     private async handleTouch(context: InternalCommandContext, args: string[]): Promise<string> {
@@ -618,18 +640,210 @@ export class TerminalSession {
         return `history: unsupported option ${args[0]}`;
     }
 
+    /**
+     * Implements the `alias` command: Defines or displays aliases.
+     * Supports `alias name='command string'` or `alias` to list all aliases.
+     */
+    private async handleAlias(_context: InternalCommandContext, args: string[]): Promise<string> {
+        if (args.length === 0) {
+            if (this.aliases.size === 0) return 'No aliases defined.';
+            let output = 'Aliases:\n';
+            this.aliases.forEach((value, key) => {
+                output += `alias ${key}='${value}'\n`;
+            });
+            return output.trim();
+        }
+
+        const declaration = args[0];
+        const match = declaration.match(/^([a-zA-Z_][a-zA-Z0-9_]*)=['"](.+)['"]$/);
+        if (match) {
+            const [, key, value] = match;
+            this.aliases.set(key, value);
+            return '';
+        } else {
+            return `alias: invalid argument: '${declaration}' (expected NAME='COMMAND')`;
+        }
+    }
+
+    /**
+     * Implements the `unalias` command: Removes aliases.
+     * Supports `unalias name`.
+     */
+    private async handleUnalias(_context: InternalCommandContext, args: string[]): Promise<string> {
+        if (args.length === 0) return 'unalias: missing operand';
+        const aliasName = args[0];
+        if (this.aliases.has(aliasName)) {
+            this.aliases.delete(aliasName);
+            return '';
+        } else {
+            return `unalias: ${aliasName}: not found`;
+        }
+    }
+
+    /**
+     * Implements the `which` command: Shows the full path of (shell) commands.
+     * For now, it indicates if a command is a built-in or an alias.
+     */
+    private async handleWhich(_context: InternalCommandContext, args: string[]): Promise<string> {
+        if (args.length === 0) return 'which: missing operand';
+        const cmdName = args[0];
+
+        if (this.aliases.has(cmdName)) {
+            return `${cmdName} is aliased to '${this.aliases.get(cmdName)}'`;
+        }
+        if (this.commands.has(cmdName)) {
+            return `${cmdName} is a shell builtin`; // Mocking typical `which` output
+        }
+        return `which: no ${cmdName} in (${this.environment.get('PATH') || ''})`;
+    }
+
+    /**
+     * Implements the `date` command: Displays the current date and time.
+     */
+    private async handleDate(_context: InternalCommandContext, _args: string[]): Promise<string> {
+        return new Date().toLocaleString(); // Default locale string for simplicity
+    }
+
+    /**
+     * Implements the `find` command: Searches for files or directories within a path.
+     * Supports `find [path] -name <pattern>`
+     */
+    private async handleFind(context: InternalCommandContext, args: string[]): Promise<string> {
+        let startPath = context.getCurrentPathString();
+        let startHandle = context.currentHandle;
+        let namePattern: string | undefined;
+
+        // Simple arg parsing: [path] -name <pattern> or -name <pattern> [path]
+        let pathArgIndex = -1;
+        let nameArgIndex = args.indexOf('-name');
+
+        if (nameArgIndex !== -1) {
+            namePattern = args[nameArgIndex + 1];
+            if (!namePattern) return 'find: missing argument to `-name`';
+            
+            // Check if there's an argument before -name that might be a path
+            if (nameArgIndex > 0) {
+                pathArgIndex = 0;
+            } else if (nameArgIndex + 2 < args.length) {
+                // Check if there's an argument after pattern that might be a path (less common but possible)
+                // We'll prioritize the first argument if it's not -name or part of -name
+                if (args.length === 3 && args[2]) { // e.g., find -name "*.txt" .
+                    pathArgIndex = 2;
+                }
+            }
+        } else {
+            // No -name, assume the first arg is path if present, otherwise current dir
+            if (args.length > 0) {
+                pathArgIndex = 0;
+            }
+        }
+
+        if (pathArgIndex !== -1) {
+            const targetPath = args[pathArgIndex];
+            try {
+                if (targetPath === '.') {
+                    // Do nothing, already defaults to current
+                } else if (targetPath === '..') {
+                    if (context.path.length > 1) {
+                        startHandle = context.path[context.path.length - 2].handle;
+                        startPath = context.path.slice(0, -1).map(p => p.name).join('/');
+                        if (startPath === '') startPath = '/';
+                    }
+                } else if (targetPath.startsWith('/')) { // Absolute path
+                    startHandle = context.rootHandle;
+                    const pathSegments = targetPath.split('/').filter(Boolean);
+                    for (const segment of pathSegments) {
+                        startHandle = await startHandle.getDirectoryHandle(segment, { create: false });
+                    }
+                    startPath = targetPath;
+                } else { // Relative path
+                    startHandle = await context.currentHandle.getDirectoryHandle(targetPath, { create: false });
+                    startPath = startPath === '/' ? `/${targetPath}` : `${startPath}/${targetPath}`;
+                }
+            } catch (e) {
+                return `find: '${targetPath}': No such file or directory`;
+            }
+        }
+
+
+        const results: string[] = [];
+        const patternRegex = namePattern ? new RegExp(namePattern.replace(/\./g, '\\.').replace(/\*/g, '.*').replace(/\?/g, '.'), 'i') : null;
+
+        await this.recursiveFind(startHandle, startPath, patternRegex, results);
+
+        return results.join('\n').trim();
+    }
+
+    /**
+     * Implements the `whoami` command: Displays the current effective username.
+     */
+    private async handleWhoami(_context: InternalCommandContext, _args: string[]): Promise<string> {
+        return this.environment.get('USER') || 'unknown';
+    }
+
+    /**
+     * Implements the `hostname` command: Displays the system's host name.
+     */
+    private async handleHostname(_context: InternalCommandContext, _args: string[]): Promise<string> {
+        return this.environment.get('HOSTNAME') || 'localhost';
+    }
+
+    /**
+     * Recursive helper for the `find` command to traverse directories.
+     */
+    private async recursiveFind(
+        currentHandle: FileSystemDirectoryHandle,
+        currentPath: string,
+        patternRegex: RegExp | null,
+        results: string[]
+    ): Promise<void> {
+        const entries = await getFilesForDirectoryWithHandles(currentHandle, currentPath);
+
+        for (const entry of entries) {
+            const fullPath = currentPath === '/' ? `/${entry.name}` : `${currentPath}/${entry.name}`;
+            if (patternRegex && patternRegex.test(entry.name)) {
+                results.push(fullPath);
+            } else if (!patternRegex) { // If no pattern, list all
+                 results.push(fullPath);
+            }
+
+            if (entry.isDirectory) {
+                try {
+                    const dirHandle = await currentHandle.getDirectoryHandle(entry.name, { create: false });
+                    await this.recursiveFind(dirHandle, fullPath, patternRegex, results);
+                } catch (e) {
+                    // Ignore directories that might have been removed or become inaccessible during traversal
+                    console.warn(`find: Could not access directory ${fullPath}: ${e}`);
+                }
+            }
+        }
+    }
+
+
     // --- Utility Methods for Formatting and Parsing ---
 
     /**
      * Helper to parse a command string into a command name and an array of arguments.
+     * Applies alias resolution.
      * @param commandString The full command line input.
      * @returns An object containing the command name and its arguments.
      */
     private parseCommandArgs(commandString: string): { command: string; args: string[] } {
         const parts = commandString.trim().split(/\s+/);
-        const command = parts[0];
-        const args = parts.slice(1);
-        return { command, args };
+        let command = parts[0];
+        const initialArgs = parts.slice(1);
+
+        // Alias resolution
+        if (this.aliases.has(command)) {
+            const aliasedCommand = this.aliases.get(command)!;
+            // Re-parse the aliased command, prepend its parts to the initial args
+            const aliasedParts = aliasedCommand.trim().split(/\s+/);
+            command = aliasedParts[0];
+            const aliasedArgs = aliasedParts.slice(1);
+            return { command, args: [...aliasedArgs, ...initialArgs] };
+        }
+
+        return { command, args: initialArgs };
     }
 
     /**
@@ -671,6 +885,7 @@ export class TerminalSession {
             case 'clear': return short ? 'Clear the terminal screen' : 'clear\n    Clear the terminal screen.';
             case 'pwd': return short ? 'Print name of current directory' : 'pwd\n    Print the name of the current working directory.';
             case 'help': return short ? 'Display information about commands' : 'help [command]\n    Display information about builtin commands. Use `help <command_name>` for specific command details.';
+            case 'man': return short ? 'An interface to the system reference manuals' : 'man <command>\n    Format and display the on-line manual pages. Currently aliases to `help <command>`.';
             case 'touch': return short ? 'Change file timestamps or create empty files' : 'touch <file_name>\n    Update the access and modification times of each FILE to the current time.\n    If FILE does not exist, it is created empty.';
             case 'echo': return short ? 'Display a line of text' : 'echo [string...]\n    Display STRING(s) to the standard output. Supports environment variable expansion (e.g., `echo $USER`).';
             case 'mv': return short ? 'Move or rename files or directories' : 'mv <source> <destination>\n    Rename SOURCE to DEST, or move SOURCE(s) to DIRECTORY. Destination cannot already exist.';
@@ -678,6 +893,13 @@ export class TerminalSession {
             case 'export': return short ? 'Set environment variables' : 'export [KEY=VALUE]\n    Set environment variables. With no arguments, list all exported variables.';
             case 'env': return short ? 'List environment variables' : 'env\n    Print a report on the current environment variables (alias for `export` without arguments).';
             case 'history': return short ? 'Display or manage command history' : 'history [-c]\n    Display or manage the command history list. Use -c (or --clear) to clear history.';
+            case 'alias': return short ? 'Define or display aliases' : "alias [NAME='COMMAND']\n    Define or display aliases. Example: `alias ll='ls -l'`";
+            case 'unalias': return short ? 'Remove aliases' : 'unalias <NAME>\n    Remove alias NAME from the list of defined aliases.';
+            case 'which': return short ? 'Locate a command' : 'which <command_name>\n    Locate and print the path to the executable file (or builtin/alias) that would be executed in the current environment.';
+            case 'date': return short ? 'Display the current date and time' : 'date\n    Print or set the system date and time.';
+            case 'find': return short ? 'Search for files in a directory hierarchy' : 'find [path] -name <pattern>\n    Search for files or directories that match a specified pattern starting from a given path (current directory by default).';
+            case 'whoami': return short ? 'Print effective user name' : 'whoami\n    Print the user name associated with the current effective user ID.';
+            case 'hostname': return short ? 'Show or set the system\'s host name' : 'hostname\n    Display the current hostname.';
             default: return short ? 'No description available' : `help: no help topics match '${cmd}'`;
         }
     }
@@ -694,6 +916,102 @@ export class TerminalSession {
         const content = await file.text(); // Read as text; consider ArrayBuffer for binary
         await fss.writeFileContent(destinationHandle, content);
     }
+
+    /**
+     * Provides autocomplete suggestions based on the current input.
+     * @param currentInput The current command line string.
+     * @returns An array of suggested strings.
+     */
+    public async getAutocompleteSuggestions(context: InternalCommandContext, currentInput: string): Promise<string[]> {
+        const trimmedInput = currentInput.trimStart();
+        const parts = trimmedInput.split(/\s+/);
+        const lastPart = parts[parts.length - 1];
+        const isCommandOrFirstArg = parts.length === 1 && !currentInput.endsWith(' ');
+        const isPathArgument = parts.length > 1 && (lastPart.includes('/') || lastPart.startsWith('.') || lastPart.startsWith('..'));
+
+        let suggestions: string[] = [];
+
+        if (isCommandOrFirstArg) {
+            // Suggest commands and aliases
+            const allExecutableNames = new Set([...this.commands.keys(), ...this.aliases.keys()]);
+            suggestions = Array.from(allExecutableNames).filter(name => name.startsWith(lastPart));
+        } else {
+            // Suggest file/directory names based on the current argument being typed
+            try {
+                let targetDirectoryHandle: FileSystemDirectoryHandle = context.currentHandle;
+                let pathPrefix = '';
+                let currentDirName = '';
+
+                if (lastPart.includes('/')) {
+                    const lastSlashIndex = lastPart.lastIndexOf('/');
+                    pathPrefix = lastPart.substring(0, lastSlashIndex + 1); // e.g., 'dir1/sub/'
+                    currentDirName = lastPart.substring(lastSlashIndex + 1); // e.g., 'file'
+
+                    let resolvedHandle = await this.resolvePathToDirectoryHandle(context, pathPrefix);
+                    if (resolvedHandle) {
+                        targetDirectoryHandle = resolvedHandle;
+                    } else {
+                        return []; // Invalid path prefix, no suggestions
+                    }
+                } else {
+                    currentDirName = lastPart;
+                }
+                
+                const filesInDir = await getFilesForDirectoryWithHandles(targetDirectoryHandle, context.getCurrentPathString());
+                
+                suggestions = filesInDir
+                    .filter(file => file.name.startsWith(currentDirName))
+                    .map(file => {
+                        const suffix = file.isDirectory ? '/' : '';
+                        // Replace the partial argument with the full suggestion
+                        const newPart = pathPrefix + file.name + suffix;
+                        return parts.slice(0, -1).join(' ') + (parts.length > 1 ? ' ' : '') + newPart;
+                    });
+            } catch (e) {
+                // Ignore errors during path resolution for suggestions
+            }
+        }
+        return suggestions.sort();
+    }
+
+    /**
+     * Resolves a path string (relative or absolute) to a FileSystemDirectoryHandle.
+     * @param context The current command context.
+     * @param pathString The path to resolve.
+     * @returns The resolved FileSystemDirectoryHandle or null if not found.
+     */
+    private async resolvePathToDirectoryHandle(context: InternalCommandContext, pathString: string): Promise<FileSystemDirectoryHandle | null> {
+        try {
+            if (pathString.startsWith('/')) { // Absolute path
+                let currentHandle: FileSystemDirectoryHandle = context.rootHandle;
+                const segments = pathString.split('/').filter(Boolean);
+                for (const segment of segments) {
+                    currentHandle = await currentHandle.getDirectoryHandle(segment, { create: false });
+                }
+                return currentHandle;
+            } else { // Relative path
+                let currentHandle: FileSystemDirectoryHandle = context.currentHandle;
+                const segments = pathString.split('/').filter(Boolean);
+                for (const segment of segments) {
+                    if (segment === '..') {
+                        // This logic is tricky with FileSystemDirectoryHandle.
+                        // A simple way is to traverse `context.path` if it's part of the current path.
+                        // For pure FileSystem API, you can't get '..' handle directly.
+                        // For this limited implementation, we'll assume relative segments refer to subdirectories
+                        // or current directory's children for simplicity.
+                        // More robust `..` handling for arbitrary relative paths would require
+                        // reconstructing path from context.path or more complex traversal.
+                        return null; // For now, don't try to resolve '..' in arbitrary path parts within a suggestion context.
+                    }
+                    currentHandle = await currentHandle.getDirectoryHandle(segment, { create: false });
+                }
+                return currentHandle;
+            }
+        } catch (e) {
+            return null; // Path not found or inaccessible
+        }
+    }
+
 
     // --- Main Execution Method ---
 
@@ -781,4 +1099,3 @@ export const executeCommand = async (commandString: string, context: CommandCont
 
 // --- Additional exports for better modularity or external usage ---
 export { type PathSegment };
-```
