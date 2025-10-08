@@ -10,6 +10,7 @@ import type { Feature } from '../../types.ts';
 const LS_KEY_PINNED_FEATURES = 'feature_dock_pinned_features';
 const LS_KEY_RECENT_FEATURES = 'feature_dock_recent_features';
 const LS_KEY_DOCK_PREFERENCES = 'feature_dock_preferences'; // NEW: For user-specific dock settings
+const LS_KEY_SHOW_ONBOARDING_HINT = 'feature_dock_show_onboarding_hint'; // NEW: For onboarding hint visibility
 const MAX_RECENT_FEATURES = 10; // Limit for recently used features
 
 // --- New Interfaces and Default Preferences ---
@@ -20,12 +21,14 @@ export interface FeatureDockPreferences {
     gridSize: FeatureGridSize; // NEW
     showRecentSection: boolean; // NEW: Toggle visibility of recent features section
     showCategoryFilters: boolean; // NEW: Toggle visibility of category filter buttons
+    columnCount: number; // NEW: Number of columns for the feature grids
 }
 const DEFAULT_DOCK_PREFERENCES: FeatureDockPreferences = {
     sortOrder: 'default',
     gridSize: 'medium', // NEW
     showRecentSection: true, // NEW
     showCategoryFilters: true, // NEW
+    columnCount: 6, // NEW: Default to 6 columns
 };
 
 // --- Local Storage Helper Functions (Fixes build error by adding 'extends unknown' to generic types) ---
@@ -33,7 +36,7 @@ const getLocalStorageItem = <T extends unknown>(key: string, defaultValue: T): T
     try {
         const item = localStorage.getItem(key);
         return item ? JSON.parse(item) : defaultValue;
-    } catch (error) {
+    } catch (error: unknown) { // FIX: Explicitly type error
         console.error(`Error reading from localStorage for key "${key}":`, error);
         return defaultValue;
     }
@@ -42,7 +45,7 @@ const getLocalStorageItem = <T extends unknown>(key: string, defaultValue: T): T
 const setLocalStorageItem = <T extends unknown>(key: string, value: T) => {
     try {
         localStorage.setItem(key, JSON.stringify(value));
-    } catch (error) {
+    } catch (error: unknown) { // FIX: Explicitly type error
         console.error(`Error writing to localStorage for key "${key}":`, error);
     }
 };
@@ -215,6 +218,91 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     );
 };
 
+// --- NEW: SuggestFeatureModal Component ---
+export interface SuggestFeatureModalProps {
+    onClose: () => void;
+    onSubmit: (suggestion: string) => void;
+}
+
+export const SuggestFeatureModal: React.FC<SuggestFeatureModalProps> = ({ onClose, onSubmit }) => {
+    const [suggestion, setSuggestion] = useState('');
+
+    const handleSubmit = () => {
+        if (suggestion.trim()) {
+            onSubmit(suggestion);
+        }
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 bg-background/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-surface border border-border rounded-lg shadow-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-2xl font-semibold text-primary">Suggest a New Feature</h2>
+                    <button
+                        onClick={onClose}
+                        className="text-text-secondary hover:text-text-primary text-2xl"
+                        aria-label="Close"
+                    >
+                        &times;
+                    </button>
+                </div>
+                <p className="text-text-secondary mb-4">
+                    Have an idea for a new feature or improvement? Let us know!
+                </p>
+                <textarea
+                    className="w-full h-32 p-3 bg-background/80 border border-border rounded-lg text-text-primary focus:ring-2 focus:ring-primary focus:outline-none resize-y"
+                    placeholder="Describe your feature idea here..."
+                    value={suggestion}
+                    onChange={(e) => setSuggestion(e.target.value)}
+                    aria-label="Feature suggestion text area"
+                />
+                <div className="mt-6 flex justify-end space-x-3">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 bg-background/80 text-text-secondary rounded-lg hover:bg-background/60 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={!suggestion.trim()}
+                        className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Submit Suggestion
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- NEW: OnboardingHint Component ---
+export interface OnboardingHintProps {
+    onClose: () => void;
+}
+
+export const OnboardingHint: React.FC<OnboardingHintProps> = ({ onClose }) => {
+    return (
+        <div className="bg-gradient-to-r from-blue-500 to-primary text-white p-4 rounded-lg shadow-lg mb-4 relative">
+            <button
+                onClick={onClose}
+                className="absolute top-2 right-2 text-white/80 hover:text-white text-xl"
+                aria-label="Dismiss hint"
+            >
+                &times;
+            </button>
+            <h4 className="font-bold text-lg mb-2">Welcome to your Feature Dock!</h4>
+            <ul className="list-disc list-inside text-sm space-y-1">
+                <li><span className="font-semibold">Right-click</span> on any feature to pin it to your dock or view details.</li>
+                <li><span className="font-semibold">Drag & Drop</span> pinned features to reorder them easily.</li>
+                <li>Use the <span className="font-semibold">Search bar</span> to quickly find features.</li>
+                <li>Customize your view with <span className="font-semibold">Sort options, Grid Size, and Category Filters</span>.</li>
+            </ul>
+        </div>
+    );
+};
+
 
 // --- FeatureButton Component (enhanced with drag & drop props and new grid size) ---
 interface FeatureButtonProps {
@@ -352,6 +440,9 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
     } | null>(null);
     const [detailsModalFeature, setDetailsModalFeature] = useState<Feature | null>(null);
     const [showClearRecentConfirm, setShowClearRecentConfirm] = useState(false); // NEW: Confirmation for clearing recent features
+    const [showClearPinnedConfirm, setShowClearPinnedConfirm] = useState(false); // NEW: Confirmation for clearing pinned features
+    const [showSuggestFeatureModal, setShowSuggestFeatureModal] = useState(false); // NEW: State for suggestion modal
+    const [showOnboardingHint, setShowOnboardingHint] = useState(false); // NEW: State for onboarding hints
 
     // NEW: States for drag & drop reordering of pinned items
     const [draggingFeatureId, setDraggingFeatureId] = useState<string | null>(null);
@@ -362,6 +453,11 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
         setPinnedFeatureIds(getLocalStorageItem(LS_KEY_PINNED_FEATURES, []));
         setRecentFeatureIds(getLocalStorageItem(LS_KEY_RECENT_FEATURES, []));
         setDockPreferences(getLocalStorageItem(LS_KEY_DOCK_PREFERENCES, DEFAULT_DOCK_PREFERENCES)); // NEW
+
+        const hintDismissed = getLocalStorageItem(LS_KEY_SHOW_ONBOARDING_HINT, false);
+        if (!hintDismissed) {
+            setShowOnboardingHint(true);
+        }
     }, []);
 
     // Save pinned features to localStorage whenever it changes
@@ -410,9 +506,27 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
         setRecentFeatureIds([]);
     }, []);
 
+    // NEW: Handle clearing pinned features
+    const handleClearPinnedFeatures = useCallback(() => {
+        setPinnedFeatureIds([]);
+    }, []);
+
     // NEW: Handle sort order change
     const handleSortOrderChange = useCallback((order: FeatureSortOrder) => {
         setDockPreferences(prev => ({ ...prev, sortOrder: order }));
+    }, []);
+
+    // NEW: Handle feature suggestion
+    const handleSubmitSuggestion = useCallback((suggestion: string) => {
+        console.log("New feature suggestion:", suggestion);
+        // In a real application, this would send data to a backend API
+        alert(`Thank you for your suggestion: "${suggestion}"!`); // Placeholder feedback
+    }, []);
+
+    // NEW: Handle dismissing onboarding hint
+    const handleDismissOnboardingHint = useCallback(() => {
+        setShowOnboardingHint(false);
+        setLocalStorageItem(LS_KEY_SHOW_ONBOARDING_HINT, true); // Mark as dismissed
     }, []);
 
     // Context menu handlers
@@ -565,6 +679,11 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
     return (
         <div className="absolute top-0 left-0 right-0 bg-surface/30 backdrop-blur-sm border-b border-border p-3 z-10">
             <div className="max-w-7xl mx-auto flex flex-col h-full">
+                {/* Onboarding Hint */}
+                {showOnboardingHint && (
+                    <OnboardingHint onClose={handleDismissOnboardingHint} />
+                )}
+
                 {/* Search Input */}
                 <input
                     type="text"
@@ -594,7 +713,7 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
                     </div>
                 )}
 
-                {/* Sort Order Selection and Grid Size Selection (NEW) */}
+                {/* Sort Order, Grid Size, and Column Count Selection (NEW) */}
                 <div className="flex justify-center mb-4 gap-4 flex-wrap">
                     <div className="flex items-center gap-2">
                         <span className="text-text-secondary text-sm">Sort by:</span>
@@ -624,9 +743,22 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
                             <option value="large">Large</option>
                         </select>
                     </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-text-secondary text-sm">Columns:</span>
+                        <select
+                            value={dockPreferences.columnCount}
+                            onChange={(e) => setDockPreferences(prev => ({ ...prev, columnCount: parseInt(e.target.value, 10) }))}
+                            className="bg-background/80 border border-border rounded-lg px-3 py-1 text-text-primary text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                            aria-label="Select number of columns for feature grids"
+                        >
+                            {[2, 3, 4, 5, 6, 7, 8].map(count => (
+                                <option key={count} value={count}>{count}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
 
-                {/* Section Visibility Toggles (NEW) */}
+                {/* Section Visibility Toggles (NEW) and other actions*/}
                 <div className="flex justify-center mb-4 gap-4 flex-wrap">
                     <label className="flex items-center space-x-2 text-text-secondary text-sm cursor-pointer">
                         <input
@@ -634,6 +766,7 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
                             checked={dockPreferences.showRecentSection}
                             onChange={(e) => setDockPreferences(prev => ({ ...prev, showRecentSection: e.target.checked }))}
                             className="form-checkbox h-4 w-4 text-primary rounded border-border focus:ring-primary"
+                            aria-label="Toggle visibility of recently used features section"
                         />
                         <span>Show Recent Section</span>
                     </label>
@@ -643,9 +776,24 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
                             checked={dockPreferences.showCategoryFilters}
                             onChange={(e) => setDockPreferences(prev => ({ ...prev, showCategoryFilters: e.target.checked }))}
                             className="form-checkbox h-4 w-4 text-primary rounded border-border focus:ring-primary"
+                            aria-label="Toggle visibility of category filter buttons"
                         />
                         <span>Show Category Filters</span>
                     </label>
+                    <button
+                        onClick={() => setShowSuggestFeatureModal(true)}
+                        className="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary/80 transition-colors text-sm"
+                        aria-label="Suggest a new feature"
+                    >
+                        Suggest Feature
+                    </button>
+                    <button
+                        onClick={() => setShowOnboardingHint(prev => !prev)}
+                        className="px-4 py-2 bg-info text-white rounded-lg hover:bg-info/80 transition-colors text-sm"
+                        aria-label="Toggle help and onboarding hints"
+                    >
+                        Help {showOnboardingHint ? '(Hide)' : '(Show)'}
+                    </button>
                 </div>
 
 
@@ -653,10 +801,21 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
                 <div className="flex-grow overflow-y-auto pb-4">
                     {/* Pinned Features Section */}
                     <div className="mb-6">
-                        <h3 className="text-lg font-semibold text-text-primary mb-3">Pinned Features (Drag to reorder)</h3>
+                        <div className="flex justify-between items-center mb-3">
+                            <h3 className="text-lg font-semibold text-text-primary">Pinned Features (Drag to reorder)</h3>
+                            {pinnedFeaturesList.length > 0 && ( // Only show clear button if there are pinned items
+                                <button
+                                    onClick={() => setShowClearPinnedConfirm(true)} // Open confirmation modal
+                                    className="px-3 py-1 text-xs bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                                    aria-label="Unpin all features from the dock"
+                                >
+                                    Clear Pinned
+                                </button>
+                            )}
+                        </div>
                         {pinnedFeaturesList.length > 0 ? (
                             <div
-                                className="flex flex-wrap gap-3 justify-center"
+                                className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-${dockPreferences.columnCount} gap-3 justify-items-center`}
                                 onDragOver={handleDragOver} // Allow drops over the container
                             >
                                 {pinnedFeaturesList.map(feature => (
@@ -679,9 +838,27 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
                                 ))}
                             </div>
                         ) : (
-                            // NEW: Empty state for pinned features
-                            <div className="p-4 text-center text-text-secondary bg-background/50 rounded-lg border border-dashed border-border">
-                                <p>No features pinned yet. Right-click any feature and select 'Pin to Dock' to add it here!</p>
+                            // NEW: Empty state for pinned features with drop zone functionality
+                            <div
+                                className="p-4 text-center text-text-secondary bg-background/50 rounded-lg border border-dashed border-border min-h-[100px] flex items-center justify-center cursor-pointer"
+                                onDragOver={handleDragOver}
+                                onDrop={(e) => { // Handle drop for empty section
+                                    e.preventDefault();
+                                    const draggedId = e.dataTransfer.getData('text/plain');
+                                    if (draggedId && !pinnedFeatureIds.includes(draggedId)) {
+                                        // Find the feature and add it to pinned.
+                                        const featureToPin = ALL_FEATURES.find(f => f.id === draggedId);
+                                        if (featureToPin) {
+                                            setPinnedFeatureIds(prev => [...prev, draggedId]);
+                                        }
+                                    }
+                                    setDraggingFeatureId(null);
+                                    setDragOverFeatureId(null);
+                                }}
+                                onDragEnter={(e) => e.preventDefault()} // Need this for drop to work
+                                aria-label="Drop features here to pin them"
+                            >
+                                <p>No features pinned yet. Right-click any feature and select 'Pin to Dock' to add it here, or drag a feature from 'All Features' below!</p>
                             </div>
                         )}
                     </div>
@@ -702,7 +879,7 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
                                 )}
                             </div>
                             {recentFeaturesList.length > 0 ? (
-                                <div className="flex flex-wrap gap-3 justify-center">
+                                <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-${dockPreferences.columnCount} gap-3 justify-items-center`}>
                                     {recentFeaturesList.map(feature => (
                                         <FeatureButton
                                             key={feature.id}
@@ -726,7 +903,7 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
 
                     {/* All Features Section (with Search/Category Filter and Sorting) */}
                     <h3 className="text-lg font-semibold text-text-primary mb-3">All Features</h3>
-                    <div className="flex flex-wrap gap-3 justify-center">
+                    <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-${dockPreferences.columnCount} gap-3 justify-items-center`}>
                         {sortedFilteredFeatures.length > 0 ? ( // Use sorted filtered list
                             sortedFilteredFeatures.map(feature => (
                                 <FeatureButton
@@ -736,11 +913,13 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
                                     onContextMenu={handleOpenContextMenu}
                                     isPinned={pinnedFeatureIds.includes(feature.id)}
                                     gridSize={dockPreferences.gridSize} // Pass gridSize
-                                    // All features are not draggable for reordering
+                                    // All features are draggable to be pinned (but not for reordering within this section)
+                                    draggable={true}
+                                    onDragStart={handleDragStart}
                                 />
                             ))
                         ) : (
-                            <p className="text-text-secondary text-center w-full py-8">
+                            <p className="text-text-secondary text-center w-full py-8 col-span-full">
                                 No features match your criteria. Try adjusting your search or category filter.
                             </p>
                         )}
@@ -768,7 +947,7 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
                 />
             )}
 
-            {/* Render ConfirmationModal if active */}
+            {/* Render ConfirmationModal for clearing recent features */}
             {showClearRecentConfirm && (
                 <ConfirmationModal
                     title="Clear Recently Used Features?"
@@ -780,6 +959,29 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
                     onCancel={() => setShowClearRecentConfirm(false)}
                     confirmText="Clear"
                     cancelText="Keep"
+                />
+            )}
+
+            {/* Render ConfirmationModal for clearing pinned features (NEW) */}
+            {showClearPinnedConfirm && (
+                <ConfirmationModal
+                    title="Clear Pinned Features?"
+                    message="Are you sure you want to unpin all features from your dock? You can always pin them again later."
+                    onConfirm={() => {
+                        handleClearPinnedFeatures();
+                        setShowClearPinnedConfirm(false);
+                    }}
+                    onCancel={() => setShowClearPinnedConfirm(false)}
+                    confirmText="Unpin All"
+                    cancelText="Keep"
+                />
+            )}
+
+            {/* Render SuggestFeatureModal if active (NEW) */}
+            {showSuggestFeatureModal && (
+                <SuggestFeatureModal
+                    onClose={() => setShowSuggestFeatureModal(false)}
+                    onSubmit={handleSubmitSuggestion}
                 />
             )}
         </div>
