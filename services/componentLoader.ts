@@ -1,7 +1,7 @@
-// Copyright James Burvel OÃ¢â‚¬â„¢Callaghan III
+// Copyright James Burvel OÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢Callaghan III
 // President Citibank Demo Business Inc.
 
-import React, { lazy, Suspense, Component, ReactNode, useCallback, useEffect, useState } from 'react';
+import React, { lazy, Suspense, Component, ReactNode, useCallback, useEffect, useState, useRef } from 'react'; // Added useRef for LazyMount component
 
 /**
  * Configuration options for the retry logic of `lazyWithRetry`.
@@ -118,10 +118,68 @@ export interface ErrorBoundaryState {
 }
 
 /**
+ * Configuration for a global error reporter, to be used with `ErrorReporterProvider`.
+ */
+export interface GlobalErrorReporterConfig {
+    /**
+     * The primary function to call when an error is caught by any `ErrorBoundary` that
+     * consumes this context. This takes precedence over individual `onError` props.
+     * @param error The error object.
+     * @param componentStack The component stack string.
+     * @param context Additional metadata provided by the `ErrorBoundary` or its `props.context`.
+     */
+    reportError: (error: Error, componentStack: string, context?: Record<string, any>) => void;
+    /**
+     * Optional function to transform or filter errors before reporting.
+     * Return `false` to prevent reporting.
+     */
+    shouldReportError?: (error: Error, componentStack: string, context?: Record<string, any>) => boolean;
+    /**
+     * Optional additional context that will be merged with the ErrorBoundary's context
+     * before reporting.
+     */
+    globalContext?: Record<string, any>;
+}
+
+/**
+ * React Context for global error reporting. Provides a way to centralize error reporting logic.
+ */
+export const ErrorReporterContext = React.createContext<GlobalErrorReporterConfig | undefined>(undefined);
+
+/**
+ * A React Provider component that makes a global error reporting configuration available
+ * to all descendant `ErrorBoundary` components.
+ *
+ * @param props.config The configuration for the global error reporter.
+ * @param props.children The children components to be rendered within the context.
+ *
+ * @example
+ * <ErrorReporterProvider config={{ reportError: (err, stack, ctx) => myTelemetryService.logError(err, stack, ctx) }}>
+ *   <AppRouter />
+ * </ErrorReporterProvider>
+ */
+export const ErrorReporterProvider: React.FC<{ config: GlobalErrorReporterConfig; children: ReactNode }> = ({ config, children }) => {
+    return (
+        <ErrorReporterContext.Provider value={config}>
+            {children}
+        </ErrorReporterContext.Provider>
+    );
+};
+
+/**
+ * A React hook to access the global error reporting configuration.
+ * @returns The `GlobalErrorReporterConfig` or `undefined` if no provider is in scope.
+ */
+export function useErrorReporter(): GlobalErrorReporterConfig | undefined {
+    return React.useContext(ErrorReporterContext);
+}
+
+/**
  * A robust Error Boundary component to catch JavaScript errors anywhere in its child component tree,
  * log those errors, and display a fallback UI. This prevents the entire application from crashing.
  *
- * It can also be configured to report errors to an external logging service via the `onError` prop.
+ * It can also be configured to report errors to an external logging service via the `onError` prop,
+ * or globally via `ErrorReporterProvider`.
  *
  * @example
  * <ErrorBoundary fallback={<p>Something went wrong!</p>} onError={(error, stack) => myLogger.log('Caught error:', error, stack)}>
@@ -129,6 +187,10 @@ export interface ErrorBoundaryState {
  * </ErrorBoundary>
  */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+    // Add contextType to consume ErrorReporterContext
+    public static contextType = ErrorReporterContext;
+    public context!: React.ContextType<typeof ErrorReporterContext>;
+
     public state: ErrorBoundaryState = {
         hasError: false,
         error: null,
@@ -155,6 +217,16 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         const logMessage = `ErrorBoundary: Caught an error in ${this.props.boundaryName || 'unnamed boundary'}.`;
         console.error(logMessage, error, errorInfo, { context: this.props.context });
 
+        // Report error to the global reporter if available
+        const globalReporter = this.context;
+        if (globalReporter?.reportError) {
+            const mergedContext = { ...globalReporter.globalContext, ...this.props.context, boundaryName: this.props.boundaryName };
+            if (globalReporter.shouldReportError ? globalReporter.shouldReportError(error, errorInfo.componentStack, mergedContext) : true) {
+                globalReporter.reportError(error, errorInfo.componentStack, mergedContext);
+            }
+        }
+
+        // Also call the individual onError prop if provided (allows local logging in addition to global)
         if (this.props.onError) {
             this.props.onError(error, errorInfo.componentStack, this.props.context);
         }
@@ -284,6 +356,95 @@ export function createRobustLazyComponent<T extends React.ComponentType<any>>(
     return RobustWrapper;
 }
 
+/**
+ * Global state for tracking multiple asynchronous loading operations.
+ */
+export interface GlobalLoadingState {
+    /** A map of active loading keys to their start timestamps. */
+    activeLoadings: Map<string, number>;
+    /** Function to register a loading process. */
+    startLoading: (key: string) => void;
+    /** Function to unregister a loading process. */
+    stopLoading: (key: string) => void;
+    /** True if any loading process is active. */
+    isLoading: boolean;
+}
+
+/**
+ * React Context for global loading state.
+ * Provides a way to centralize loading indicators across an application.
+ */
+export const LoadingContext = React.createContext<GlobalLoadingState>({
+    activeLoadings: new Map(),
+    startLoading: () => {},
+    stopLoading: () => {},
+    isLoading: false,
+});
+
+/**
+ * A Provider component for managing and exposing a global loading state.
+ * This allows multiple components to register their loading status, and a
+ * global UI to react (e.g., show a loading spinner/progress bar).
+ *
+ * @example
+ * <LoadingProvider>
+ *   <GlobalSpinner /> // This component can consume `useLoadingState`
+ *   <AppContent />
+ * </LoadingProvider>
+ */
+export const LoadingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const [activeLoadings, setActiveLoadings] = useState<Map<string, number>>(new Map());
+
+    const startLoading = useCallback((key: string) => {
+        setActiveLoadings(prev => {
+            const newMap = new Map(prev);
+            newMap.set(key, Date.now());
+            return newMap;
+        });
+    }, []);
+
+    const stopLoading = useCallback((key: string) => {
+        setActiveLoadings(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(key);
+            return newMap;
+        });
+    }, []);
+
+    const isLoading = activeLoadings.size > 0;
+
+    const contextValue = { activeLoadings, startLoading, stopLoading, isLoading };
+
+    return (
+        <LoadingContext.Provider value={contextValue}>
+            {children}
+        </LoadingContext.Provider>
+    );
+};
+
+/**
+ * A React hook to access the global loading state and control functions.
+ * Use this hook in components that need to indicate loading, or in a global UI
+ * to show/hide a loading indicator.
+ * @returns The `GlobalLoadingState` object.
+ *
+ * @example
+ * function MyComponent() {
+ *   const { startLoading, stopLoading, isLoading } = useLoadingState();
+ *
+ *   useEffect(() => {
+ *     startLoading('myDataFetch');
+ *     fetchData().then(() => stopLoading('myDataFetch'));
+ *   }, []);
+ *
+ *   return isLoading ? <p>Loading data...</p> : <p>Data loaded.</p>;
+ * }
+ */
+export function useLoadingState(): GlobalLoadingState {
+    return React.useContext(LoadingContext);
+}
+
+
 type ComponentPreloadCache = Map<string, Promise<any>>;
 const componentPreloadCache: ComponentPreloadCache = new Map();
 
@@ -387,11 +548,6 @@ export function getOrPreloadComponentImport(componentKey: string, componentImpor
     }
     return preloadComponent(componentKey, componentImportFactory);
 }
-
-// Global registry for RobustLazyComponents or any React components,
-// allowing them to be retrieved by a string key for dynamic rendering.
-type ComponentRegistry = Map<string, React.ComponentType<any>>;
-const globalComponentRegistry: ComponentRegistry = new Map();
 
 /**
  * Represents the schema for a component's props, useful for runtime validation.
@@ -588,6 +744,153 @@ export const DynamicComponentRenderer: React.FC<{
     }
 
     return componentElement;
+};
+
+export interface LazyMountProps {
+    /** The content to render. */
+    children: ReactNode;
+    /**
+     * If true, children will be mounted immediately. Useful for toggling lazy behavior.
+     * Defaults to false.
+     */
+    forceMount?: boolean;
+    /**
+     * Optional component to render while children are not mounted (e.g., a placeholder).
+     * Defaults to `null`.
+     */
+    placeholder?: ReactNode;
+    /**
+     * Optional delay in milliseconds before mounting children, even after criteria are met.
+     * Useful to debounce mounting or ensure smooth transitions. Defaults to 0.
+     */
+    delayMs?: number;
+    /**
+     * Options for the Intersection Observer. Only applies if `mountOnVisible` is true.
+     */
+    intersectionObserverOptions?: IntersectionObserverInit;
+    /**
+     * If true, children will mount when the component enters the viewport.
+     * Defaults to false.
+     */
+    mountOnVisible?: boolean;
+    /**
+     * If true, children will mount after the specified `delayMs` has passed since render.
+     * Defaults to false.
+     */
+    mountAfterDelay?: boolean;
+}
+
+/**
+ * `LazyMount` defers the actual mounting and rendering of its children until
+ * certain conditions are met, such as becoming visible in the viewport or after a delay.
+ * This can significantly improve initial page load performance and perceived responsiveness
+ * by avoiding rendering off-screen or non-critical components immediately.
+ *
+ * It uses an `IntersectionObserver` when `mountOnVisible` is true to detect visibility.
+ * If no `placeholder` is provided with `mountOnVisible`, a minimal invisible `div` is rendered
+ * to serve as the observation target.
+ *
+ * @example
+ * // Mounts after 2 seconds
+ * <LazyMount mountAfterDelay delayMs={2000} placeholder={<div>Loading content...</div>}>
+ *   <HeavyComponent />
+ * </LazyMount>
+ *
+ * @example
+ * // Mounts when visible in viewport
+ * <LazyMount mountOnVisible placeholder={<div style={{ height: '300px', background: '#f0f0f0' }}>Scroll down to load</div>}>
+ *   <ImageGallery />
+ * </LazyMount>
+ *
+ * @example
+ * // Combining with `createRobustLazyComponent` for full lazy experience:
+ * const LazyDashboard = createRobustLazyComponent(() => import('./Dashboard'), 'Dashboard');
+ * <LazyMount mountOnVisible placeholder={<div>Dashboard placeholder</div>}>
+ *   <LazyDashboard />
+ * </LazyMount>
+ */
+export const LazyMount: React.FC<LazyMountProps> = ({
+    children,
+    forceMount = false,
+    placeholder = null,
+    delayMs = 0,
+    intersectionObserverOptions,
+    mountOnVisible = false,
+    mountAfterDelay = false,
+}) => {
+    const [shouldMount, setShouldMount] = useState(false);
+    const elementRef = useRef<HTMLElement>(null);
+    const timeoutRef = useRef<NodeJS.Timeout>();
+
+    // Effect for mounting after a delay
+    useEffect(() => {
+        if (forceMount) {
+            setShouldMount(true);
+            return;
+        }
+
+        if (mountAfterDelay && delayMs > 0 && !shouldMount) {
+            timeoutRef.current = setTimeout(() => {
+                setShouldMount(true);
+            }, delayMs);
+        }
+
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, [forceMount, mountAfterDelay, delayMs, shouldMount]);
+
+    // Effect for mounting on visibility
+    useEffect(() => {
+        if (forceMount || shouldMount || !mountOnVisible || !elementRef.current) {
+            return;
+        }
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    setShouldMount(true);
+                    observer.disconnect();
+                }
+            });
+        }, intersectionObserverOptions);
+
+        observer.observe(elementRef.current);
+
+        return () => {
+            // Disconnect observer on component unmount or when dependencies change
+            if (observer) {
+                observer.disconnect();
+            }
+        };
+    }, [forceMount, shouldMount, mountOnVisible, intersectionObserverOptions]);
+
+
+    if (shouldMount || forceMount) {
+        return <>{children}</>;
+    }
+
+    if (mountOnVisible) {
+        // Create an observable element. If a placeholder is provided, it's rendered inside.
+        // If no placeholder, a minimal invisible div is used for observation.
+        const observableElement = (
+            <div
+                ref={elementRef}
+                style={
+                    placeholder === null
+                        ? { minHeight: '1px', minWidth: '1px', overflow: 'hidden', pointerEvents: 'none' } // Minimal size for observation
+                        : {} // Let the placeholder define the visual area
+                }
+            >
+                {placeholder}
+            </div>
+        );
+        return observableElement;
+    }
+
+    return <>{placeholder}</>;
 };
 
 // Expose a helper to clear the preload cache, primarily for testing or specific reset scenarios.
