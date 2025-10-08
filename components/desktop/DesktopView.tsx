@@ -7,7 +7,6 @@ import { Taskbar } from './Taskbar.tsx';
 import { FeatureDock } from './FeatureDock.tsx';
 import { ALL_FEATURES } from '../features/index.ts';
 import type { Feature, WindowState } from '../../types.ts';
-import { useAppStore } from '../../store/useAppStore.ts';
 
 // IMPORTANT ASSUMPTION:
 // For these new features to function seamlessly and robustly as a "market-ready" product,
