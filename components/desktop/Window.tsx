@@ -11,7 +11,6 @@ import type { WindowState } from '../../types.ts';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import Icon from '../ui/Icon';
 import { FEATURES_MAP } from '../features/index.ts';
-import { useAppStore } from '../../store/useAppStore.ts';
 
 // Define Window Resize directions
 export type ResizeDirection =
