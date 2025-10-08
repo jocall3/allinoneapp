@@ -1,7 +1,7 @@
-// Copyright James Burvel Oâ€™Callaghan III
+// Copyright James Burvel OÃ¢â‚¬â„¢Callaghan III
 // President Citibank Demo Business Inc.
 
-import React, { lazy, Suspense, Component, ReactNode } from 'react';
+import React, { lazy, Suspense, Component, ReactNode, useCallback, useEffect, useState } from 'react';
 
 /**
  * Configuration options for the retry logic of `lazyWithRetry`.
@@ -23,6 +23,13 @@ export interface RetryOptions {
      * @param error The final error after all retries.
      */
     onAllRetriesFailed?: (error: Error) => void;
+    /**
+     * Optional unique version identifier for the component. If provided, and `lazyWithRetry` detects a
+     * chunk load error, it might attempt to reload with a cache-busting mechanism specific to this version.
+     * Note: Full cache-busting often requires build-time changes (e.g., unique chunk names)
+     * but this can be used to inform custom `onAllRetriesFailed` logic.
+     */
+    componentVersion?: string;
 }
 
 /**
@@ -94,9 +101,11 @@ export interface ErrorBoundaryProps {
      * @param error The error that was caught.
      * @param componentStack The component stack information.
      */
-    onError?: (error: Error, componentStack: string) => void;
+    onError?: (error: Error, componentStack: string, context?: Record<string, any>) => void;
     /** A unique identifier for this boundary instance, useful for distinguishing logs. */
     boundaryName?: string;
+    /** Optional context object to be passed to the onError callback, useful for adding extra metadata to logs. */
+    context?: Record<string, any>;
 }
 
 /**
@@ -144,14 +153,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         this.setState({ errorInfo }); // Update state with component stack
 
         const logMessage = `ErrorBoundary: Caught an error in ${this.props.boundaryName || 'unnamed boundary'}.`;
-        console.error(logMessage, error, errorInfo);
+        console.error(logMessage, error, errorInfo, { context: this.props.context });
 
         if (this.props.onError) {
-            this.props.onError(error, errorInfo.componentStack);
+            this.props.onError(error, errorInfo.componentStack, this.props.context);
         }
 
         // Example: Integrate with a global error logging service if available
-        // (window as any).globalErrorLogger?.report(error, errorInfo, { context: this.props.boundaryName });
+        // (window as any).globalErrorLogger?.report(error, errorInfo, { context: this.props.boundaryName, ...this.props.context });
     }
 
     public render(): ReactNode {
@@ -188,8 +197,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
  * Options for `createRobustLazyComponent`, combining retry and error boundary configurations.
  */
 export interface RobustLazyComponentOptions extends RetryOptions, Partial<Omit<ErrorBoundaryProps, 'children'>> {
-    /** The fallback UI to display while the component is loading and also for error states. */
-    fallback?: ReactNode;
+    /** The fallback UI to display specifically while the component is loading via Suspense. */
+    loadingFallback?: ReactNode;
+    /** The fallback UI to display when a runtime error occurs. This overrides the default `ErrorBoundary` fallback.
+     * Can be a ReactNode or a function that receives the error and component stack.
+     */
+    errorFallback?: ReactNode | ((error: Error, componentStack: string) => ReactNode);
     /** An optional unique key for the component, useful for preloading. */
     componentKey?: string;
 }
@@ -209,7 +222,8 @@ export interface RobustLazyComponentOptions extends RetryOptions, Partial<Omit<E
  *   () => import('./Dashboard'),
  *   'Dashboard',
  *   {
- *     fallback: <div>Loading Dashboard...</div>,
+ *     loadingFallback: <div>Loading Dashboard...</div>,
+ *     errorFallback: <ErrorCard component="Dashboard" />,
  *     boundaryName: 'DashboardPageError',
  *     onError: (error, stack) => console.log('Dashboard error:', error, stack),
  *     maxRetries: 5,
@@ -226,7 +240,8 @@ export function createRobustLazyComponent<T extends React.ComponentType<any>>(
     options?: RobustLazyComponentOptions
 ): React.ComponentType<React.ComponentProps<T>> {
     const defaultOptions: RobustLazyComponentOptions = {
-        fallback: null,
+        loadingFallback: null,
+        errorFallback: null,
         boundaryName: `LazyComponentErrorBoundary-${exportName}`,
         ...options,
     };
@@ -245,18 +260,20 @@ export function createRobustLazyComponent<T extends React.ComponentType<any>>(
         retryDelayMs: defaultOptions.retryDelayMs,
         onRetry: defaultOptions.onRetry,
         onAllRetriesFailed: finalOnAllRetriesFailed,
+        componentVersion: defaultOptions.componentVersion,
     });
 
     const RobustWrapper = (props: React.ComponentProps<T>) => {
         const errorBoundaryProps: ErrorBoundaryProps = {
-            fallback: defaultOptions.fallback, // This fallback serves for both loading and error states
+            fallback: defaultOptions.errorFallback || defaultOptions.loadingFallback, // Prefer error-specific fallback, then loading fallback
             onError: defaultOptions.onError,
             boundaryName: defaultOptions.boundaryName,
+            context: { componentKey: defaultOptions.componentKey, exportName, ...defaultOptions.context },
         };
 
         return (
             <ErrorBoundary {...errorBoundaryProps}>
-                <Suspense fallback={defaultOptions.fallback}>
+                <Suspense fallback={defaultOptions.loadingFallback}>
                     <LazyComponent {...props} />
                 </Suspense>
             </ErrorBoundary>
@@ -306,6 +323,56 @@ export function preloadComponent(componentKey: string, componentImport: () => Pr
 }
 
 /**
+ * Preloads a component when it becomes visible in the viewport.
+ * Uses Intersection Observer API for efficient background loading.
+ *
+ * @param componentKey A unique identifier for the component to preload.
+ * @param componentImport A function that returns a dynamic import.
+ * @returns A React ref that should be attached to the element whose visibility triggers the preload.
+ *
+ * @example
+ * const MyLazyComponent = createRobustLazyComponent(...);
+ * const preloadRef = preloadComponentOnVisibility('MyLazyComponent', () => import('./MyLazyComponent'));
+ *
+ * return (
+ *   <div>
+ *     <div ref={preloadRef} style={{ minHeight: '100px' }}>
+ *       {/* This area triggers preload when visible */}
+ *     </div>
+ *     <MyLazyComponent />
+ *   </div>
+ * );
+ */
+export function preloadComponentOnVisibility(
+    componentKey: string,
+    componentImport: () => Promise<any>
+): React.RefCallback<HTMLElement> {
+    const handleRef = useCallback((node: HTMLElement | null) => {
+        if (!node) return;
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    preloadComponent(componentKey, componentImport);
+                    observer.disconnect(); // Stop observing once preloaded
+                }
+            });
+        }, {
+            rootMargin: '200px', // Start preloading 200px before it enters the viewport
+            threshold: 0.1, // Trigger when 10% of the element is visible
+        });
+
+        observer.observe(node);
+
+        return () => {
+            observer.disconnect();
+        };
+    }, [componentKey, componentImport]);
+
+    return handleRef;
+}
+
+/**
  * Retrieves a component's import promise from the preload cache, or initiates loading if not present.
  * This function is an alternative to `preloadComponent` when you want to ensure a component
  * is being loaded, but don't strictly need to await the promise at the call site.
@@ -327,6 +394,25 @@ type ComponentRegistry = Map<string, React.ComponentType<any>>;
 const globalComponentRegistry: ComponentRegistry = new Map();
 
 /**
+ * Represents the schema for a component's props, useful for runtime validation.
+ * Can be any object where keys are prop names and values describe validation rules (e.g., Joi schema, Yup schema, or a simple type).
+ */
+export type ComponentPropsSchema<P extends object = any> = {
+    [K in keyof P]?: any; // Define your schema structure here, e.g., Joi.object().keys(...)
+};
+
+/**
+ * Interface for a registered component entry, including an optional props schema.
+ */
+interface RegisteredComponentEntry {
+    component: React.ComponentType<any>;
+    schema?: ComponentPropsSchema;
+}
+
+type ExtendedComponentRegistry = Map<string, RegisteredComponentEntry>;
+const globalExtendedComponentRegistry: ExtendedComponentRegistry = new Map();
+
+/**
  * Registers a React component (typically one created by `createRobustLazyComponent`) with a unique key.
  * This allows components to be referenced and retrieved by a string identifier,
  * facilitating dynamic component loading and rendering based on configurations,
@@ -334,12 +420,19 @@ const globalComponentRegistry: ComponentRegistry = new Map();
  *
  * @param key The unique string key for the component (e.g., 'DashboardPage', 'ProductCard').
  * @param component The React component to register.
+ * @param schema An optional schema to validate the props passed to this component dynamically.
  * @throws {Error} If a component with the same key is already registered, indicating a potential conflict.
  *
  * @example
  * // In an application initialization module:
- * registerComponent('Dashboard', createRobustLazyComponent(() => import('./Dashboard'), 'Dashboard', { fallback: <LoadingSpinner /> }));
- * registerComponent('UserProfile', createRobustLazyComponent(() => import('./UserProfile'), 'UserProfile'));
+ * registerComponent('Dashboard', createRobustLazyComponent(() => import('./Dashboard'), 'Dashboard', { loadingFallback: <LoadingSpinner /> }));
+ *
+ * // With prop validation schema (e.g., using a simple validator function)
+ * const dashboardSchema = {
+ *   userId: (val: any) => typeof val === 'string' && val.length > 0,
+ *   theme: (val: any) => ['light', 'dark'].includes(val),
+ * };
+ * registerComponent('ValidatedDashboard', createRobustLazyComponent(() => import('./ValidatedDashboard'), 'ValidatedDashboard'), dashboardSchema);
  *
  * // In a dynamic rendering component:
  * const ComponentToRender = getRegisteredComponent(someConfig.componentName);
@@ -349,13 +442,11 @@ const globalComponentRegistry: ComponentRegistry = new Map();
  *   return <div>Error: Component '{someConfig.componentName}' not found.</div>;
  * }
  */
-export function registerComponent(key: string, component: React.ComponentType<any>): void {
-    if (globalComponentRegistry.has(key)) {
-        // In a production-ready system, consider if overwriting is acceptable or if it should be an error.
-        // For robustness, usually disallow overwriting to prevent unexpected behavior.
+export function registerComponent(key: string, component: React.ComponentType<any>, schema?: ComponentPropsSchema): void {
+    if (globalExtendedComponentRegistry.has(key)) {
         throw new Error(`Component with key '${key}' is already registered. Please use a unique key.`);
     }
-    globalComponentRegistry.set(key, component);
+    globalExtendedComponentRegistry.set(key, { component, schema });
     console.debug(`Component '${key}' registered successfully.`);
 }
 
@@ -366,7 +457,47 @@ export function registerComponent(key: string, component: React.ComponentType<an
  * @returns The registered React component, or `undefined` if no component is found for the given key.
  */
 export function getRegisteredComponent(key: string): React.ComponentType<any> | undefined {
-    return globalComponentRegistry.get(key);
+    return globalExtendedComponentRegistry.get(key)?.component;
+}
+
+/**
+ * Retrieves a previously registered React component entry (component and its schema) by its key.
+ *
+ * @param key The unique string key of the component.
+ * @returns The registered component entry, or `undefined`.
+ */
+export function getRegisteredComponentEntry(key: string): RegisteredComponentEntry | undefined {
+    return globalExtendedComponentRegistry.get(key);
+}
+
+/**
+ * A React hook for dynamically retrieving a registered component.
+ *
+ * @param componentKey The key of the component to retrieve.
+ * @returns The registered React component, or `undefined` if not found.
+ */
+export function useDynamicComponent(componentKey: string): React.ComponentType<any> | undefined {
+    const [component, setComponent] = useState<React.ComponentType<any> | undefined>(undefined);
+
+    useEffect(() => {
+        setComponent(getRegisteredComponent(componentKey));
+    }, [componentKey]);
+
+    return component;
+}
+
+/**
+ * A type for defining component configurations, used with `DynamicComponentRenderer`.
+ */
+export interface ComponentConfig {
+    componentKey: string;
+    props?: { [key: string]: any };
+    /** Optional explicit `fallback` for this specific dynamic render if the component is not found. */
+    fallback?: ReactNode;
+    /** Optional `errorBoundaryProps` for a dedicated ErrorBoundary wrapping this specific dynamic render. */
+    errorBoundaryProps?: Partial<ErrorBoundaryProps>;
+    /** If true, and the component is not found, `null` will be returned instead of a warning message. */
+    renderNullIfNotFound?: boolean;
 }
 
 /**
@@ -393,31 +524,64 @@ export function getRegisteredComponent(key: string): React.ComponentType<any> | 
  *   config={{ componentKey: 'NonExistentComponent' }}
  *   options={{ fallback: <div>Component not found!</div> }}
  * />
+ *
+ * // With explicit null for missing component:
+ * <DynamicComponentRenderer
+ *   config={{ componentKey: 'NonExistentComponent', renderNullIfNotFound: true }}
+ * /> // Renders null
  */
 export const DynamicComponentRenderer: React.FC<{
-    config: { componentKey: string; props?: { [key: string]: any } };
-    options?: {
-        fallback?: ReactNode; // Fallback if componentKey is not found
-        errorBoundaryProps?: Partial<ErrorBoundaryProps>; // Props for an outer ErrorBoundary specific to this dynamic render
-    };
-}> = ({ config, options }) => {
-    const ComponentToRender = getRegisteredComponent(config.componentKey);
+    config: ComponentConfig;
+}> = ({ config }) => {
+    const componentEntry = getRegisteredComponentEntry(config.componentKey);
 
-    if (!ComponentToRender) {
+    if (!componentEntry || !componentEntry.component) {
+        if (config.renderNullIfNotFound) {
+            return null;
+        }
         console.warn(`Attempted to render unregistered component: '${config.componentKey}'`);
-        return (options?.fallback || (
-            <div style={{ color: 'orange', padding: '10px', border: '1px dashed orange' }}>
+        return (config.fallback || (
+            <div style={{ color: 'orange', padding: '10px', border: '1px dashed orange', borderRadius: '4px' }}>
                 Warning: Component '{config.componentKey}' not found in registry.
             </div>
         )) as React.ReactElement;
     }
 
-    const componentElement = <ComponentToRender {...config.props} />;
+    const ComponentToRender = componentEntry.component;
+    let validatedProps = config.props;
+
+    // Perform prop validation if a schema is provided
+    if (componentEntry.schema && config.props) {
+        try {
+            // This is a simple example. In a real app, integrate with a robust validation library (Joi, Yup, Zod).
+            // For now, it assumes schema values are simple predicate functions.
+            for (const propName in componentEntry.schema) {
+                if (Object.prototype.hasOwnProperty.call(componentEntry.schema, propName)) {
+                    const validator = componentEntry.schema[propName];
+                    if (typeof validator === 'function' && !validator(config.props[propName])) {
+                        console.error(`DynamicComponentRenderer: Prop validation failed for component '${config.componentKey}'. Prop '${propName}' is invalid.`, config.props[propName]);
+                        // Optionally throw or adjust props. For now, just log.
+                    }
+                }
+            }
+        } catch (validationError: any) {
+            console.error(`DynamicComponentRenderer: Error during prop validation for component '${config.componentKey}':`, validationError);
+            // Decide how to handle validation errors: render an error fallback, filter props, etc.
+            // For now, continue with the potentially invalid props or strip them.
+            // Example: validatedProps = {}; // Clear props on severe validation failure
+        }
+    }
+
+    const componentElement = <ComponentToRender {...validatedProps} />;
 
     // Wrap with an optional ErrorBoundary if specified, for granular error handling.
-    if (options?.errorBoundaryProps) {
+    if (config.errorBoundaryProps) {
         return (
-            <ErrorBoundary {...options.errorBoundaryProps} boundaryName={options.errorBoundaryProps.boundaryName || `DynamicRendererBoundary-${config.componentKey}`}>
+            <ErrorBoundary
+                {...config.errorBoundaryProps}
+                boundaryName={config.errorBoundaryProps.boundaryName || `DynamicRendererBoundary-${config.componentKey}`}
+                context={{ componentKey: config.componentKey, ...config.errorBoundaryProps.context }}
+            >
                 {componentElement}
             </ErrorBoundary>
         );
@@ -442,6 +606,30 @@ export function clearComponentPreloadCache(): void {
  * Use with caution, primarily for testing or scenarios where dynamic component re-registration is needed.
  */
 export function clearComponentRegistry(): void {
-    globalComponentRegistry.clear();
+    globalExtendedComponentRegistry.clear();
     console.debug("Global component registry cleared.");
+}
+
+/**
+ * A utility to check if a component with a given key is already registered.
+ * @param key The component key to check.
+ * @returns `true` if registered, `false` otherwise.
+ */
+export function isComponentRegistered(key: string): boolean {
+    return globalExtendedComponentRegistry.has(key);
+}
+
+/**
+ * An advanced `useDynamicComponent` hook that also returns the component's schema.
+ * @param componentKey The key of the component.
+ * @returns An object containing the component and its schema, or `undefined` if not found.
+ */
+export function useDynamicComponentEntry(componentKey: string): RegisteredComponentEntry | undefined {
+    const [entry, setEntry] = useState<RegisteredComponentEntry | undefined>(undefined);
+
+    useEffect(() => {
+        setEntry(getRegisteredComponentEntry(componentKey));
+    }, [componentKey]);
+
+    return entry;
 }
