@@ -1,4 +1,4 @@
-// Copyright James Burvel O’Callaghan III
+// Copyright James Burvel Oâ€™Callaghan III
 // President Citibank Demo Business Inc.
 
 /**
@@ -292,40 +292,40 @@ export const enhanceSnippetStream = (code: string) => {
 };
 
 // --- Added 50 new functions ---
-export const generateMarketingCopy = (productDescription: string) => 
+export const generateMarketingCopy = (productDescription: string) =>
     streamContent(`Generate compelling marketing copy for a product with the following description: "${productDescription}"`, "You are a senior marketing copywriter.");
 
-export const brainstormIdeas = (topic: string) => 
+export const brainstormIdeas = (topic: string) =>
     generateJson<{ ideas: string[] }>(`Brainstorm a list of creative ideas about: "${topic}"`, "You are a creative assistant.", { type: Type.OBJECT, properties: { ideas: { type: Type.ARRAY, items: { type: Type.STRING }}}, required: ['ideas'] }).then(res => res.ideas);
 
-export const generateUserStories = (featureDescription: string) => 
+export const generateUserStories = (featureDescription: string) =>
     streamContent(`Generate user stories in the format "As a [user type], I want [goal] so that [benefit]" for the following feature: "${featureDescription}"`, "You are a product manager.");
 
-export const transcribeMeeting = (base64Audio: string, mimeType: string) => 
+export const transcribeMeeting = (base64Audio: string, mimeType: string) =>
     streamContent({ parts: [{ inlineData: { mimeType, data: base64Audio } }, { text: "Transcribe this meeting audio and provide a summary with action items." }] }, "You are a professional meeting transcriber.");
 
-export const detectBias = (text: string) => 
+export const detectBias = (text: string) =>
     streamContent(`Analyze the following text for potential ethical biases (e.g., gender, racial, cultural) and provide a constructive report. Text: "${text}"`, "You are an expert in ethical AI and bias detection.");
 
-export const generateProjectHealthReport = (fileList: string) => 
+export const generateProjectHealthReport = (fileList: string) =>
     streamContent(`Analyze this file list and generate a project health report, commenting on structure, potential issues, and positive aspects. Files:\n${fileList}`, "You are a senior software architect.");
 
-export const generateImageCaption = (base64Image: string, mimeType: string) => 
+export const generateImageCaption = (base64Image: string, mimeType: string) =>
     generateContentWithImage("Generate a descriptive caption and alt-text for this image.", base64Image, mimeType);
 
-export const suggestFileRename = (fileName: string) => 
+export const suggestFileRename = (fileName: string) =>
     generateContent(`Suggest a better, more descriptive file name for a file currently named: "${fileName}"`, "You are a file organization expert.");
 
-export const generateRecipe = (ingredients: string) => 
+export const generateRecipe = (ingredients: string) =>
     streamContent(`Generate a recipe that uses the following ingredients: ${ingredients}`, "You are a professional chef.");
 
-export const findBrokenLinks = (text: string) => 
+export const findBrokenLinks = (text: string) =>
     streamContent(`Scan the following text and identify any potentially broken or malformed URLs. Text:\n${text}`, "You are a web crawler bot specializing in link validation.");
 
 export const getContextualSuggestions = (context: string) =>
     generateJson<{suggestions: string[]}>(`Based on the current context, suggest three relevant commands or actions. Context: ${context}`, "You are a helpful AI assistant.", {type: Type.OBJECT, properties: {suggestions: {type: Type.ARRAY, items: {type: Type.STRING}}}, required: ['suggestions']}).then(res => res.suggestions);
 
-export const getVoiceCommandAction = (command: string) => 
+export const getVoiceCommandAction = (command: string) =>
     generateContent(`Interpret the following voice command and suggest a corresponding action or feature to execute: "${command}"`, "You are a voice command interpreter for a developer tool.");
 
 export const proactivelyIdentifyProblems = (code: string) =>
@@ -333,7 +333,7 @@ export const proactivelyIdentifyProblems = (code: string) =>
 
 export const undoLastAiAction = () => Promise.resolve("Undo functionality is complex and requires state management. This is a placeholder for a real implementation.");
 
-export const generateContentTags = (content: string) => 
+export const generateContentTags = (content: string) =>
     generateJson<{tags: string[]}>(`Analyze the following content and suggest 3-5 relevant tags. Content: "${content.substring(0, 1000)}"`, "You are an expert content tagger.", {type: Type.OBJECT, properties: {tags: {type: Type.ARRAY, items: {type: Type.STRING}}}, required: ['tags']}).then(res => res.tags);
 
 export const semanticSearch = (query: string, documents: string) =>
@@ -359,10 +359,10 @@ export const mapFileRelationships = (fileContents: string) =>
 
 export const refactorCodeRealtime = (code: string) =>
     streamContent(`Suggest a refactoring for this code snippet:\n\`\`\`${code}\`\`\``, "You are a real-time AI pair programmer.");
-    
-export const completeCode = (code: string) => 
+
+export const completeCode = (code: string) =>
     streamContent(`Complete the following code block:\n\`\`\`${code}\`\`\``, "You are an AI code completion engine.");
-    
+
 export const generateCodeDocumentation = (code: string) =>
     streamContent(`Generate documentation (e.g., JSDoc, Python Docstrings) for the following code. Code:\n\`\`\`${code}\`\`\``, "You are an expert at writing clear code documentation.");
 
@@ -371,19 +371,19 @@ export const debugFromErrorLog = (errorLog: string) =>
 
 export const searchCodeSemantically = (query: string, codeSnippets: string) =>
     streamContent(`Search for code snippets based on their functionality or intent from the following code base:\n${codeSnippets}`, "You are a semantic code search engine.");
-    
+
 export const generateApiClient = (apiSpec: string) =>
     streamContent(`Generate a type-safe API client in TypeScript from the following OpenAPI/Swagger specification:\n${apiSpec}`, "You are an API client generator.");
-    
+
 export const analyzePerformance = (code: string) =>
     streamContent(`Analyze the following code for performance bottlenecks and suggest optimizations. Code:\n\`\`\`${code}\`\`\``, "You are a performance optimization expert.");
-    
+
 export const scanForSecurityVulnerabilities = (code:string) =>
     streamContent(`Scan the following code for common security vulnerabilities (e.g., OWASP Top 10) and provide a report. Code:\n\`\`\`${code}\`\`\``, "You are a senior security engineer.");
-    
+
 export const generateDatabaseQuery = (description: string) =>
     streamContent(`Generate a SQL query based on the following description: "${description}"`, "You are a database administrator.");
-    
+
 export const explainErrorMessage = (errorMessage: string) =>
     streamContent(`Explain this error message and suggest common fixes: "${errorMessage}"`, "You are a helpful debugging assistant.");
 
@@ -407,7 +407,7 @@ export const generatePaletteFromImage = (base64Image: string, mimeType: string) 
 
 export const anonymizeData = (text: string) =>
     streamContent(`Anonymize the following text by redacting Personally Identifiable Information (PII) like names, emails, and phone numbers. Text:\n${text}`, "You are a data privacy expert.");
-    
+
 export const generateTaskList = (notes: string) =>
     streamContent(`Analyze the following notes and extract a list of actionable tasks. Notes:\n${notes}`, "You are a productivity assistant.");
 
@@ -472,7 +472,7 @@ export const checkFileIntegrity = (fileContent: string): Promise<string> => {
 };
 
 export const generateApiDocumentation = (code: string): Promise<string> => {
-    const prompt = `Generate API documentation in Markdown format for the following code snippet:\n\n\`\`\`\n${code}\n\`\`\``;
+    const prompt = `Generate API documentation in Markdown format for the following code snippet:\n\n\`\`\`\n${code}\`\`\``;
     return generateContent(prompt, "You are a technical writer who specializes in API documentation.");
 };
 
@@ -531,10 +531,10 @@ export const suggestMeetingAgenda = (topic: string) =>
 
 export const summarizeDailyActivity = (activityLog: string) =>
     streamContent(`Generate a daily summary of user activity based on this log:\n${activityLog}`, "You are a productivity analyst.");
-    
+
 export const suggestTimeManagement = (taskList: string) =>
     streamContent(`Analyze this task list and suggest an optimal schedule for focused work, including breaks. Tasks:\n${taskList}`, "You are a time management coach.");
-    
+
 export const generateStatusReport = (gitLog: string) =>
     streamContent(`Generate an executive project status report based on this git activity:\n${gitLog}`, "You are a project manager.");
 
@@ -552,13 +552,13 @@ export const getSystemHealth = (metrics: string) =>
 
 export const suggestBackupStrategy = (fileList: string) =>
     streamContent(`Based on this file list and modification patterns, suggest an optimal backup strategy (full vs. incremental, frequency). Files:\n${fileList}`, "You are a data management expert.");
-    
+
 export const migrateData = (sourceData: string, migrationPlan: string) =>
     streamContent(`Based on the migration plan, transform the source data. Plan: ${migrationPlan}\nData: ${sourceData}`, "You are a data migration specialist.");
-    
+
 export const auditSecurity = (serviceConfig: string) =>
     streamContent(`Perform a basic security audit on this service configuration and report potential issues:\n${serviceConfig}`, "You are a security auditor.");
-    
+
 export const filterNotifications = (notifications: string) =>
     streamContent(`Filter and prioritize this list of notifications, providing a summary of the most important items:\n${notifications}`, "You are a smart notification system.");
 
@@ -570,16 +570,16 @@ export const optimizeCloudCosts = (usageReport: string) =>
 
 export const assistPromptEngineering = (prompt: string) =>
     streamContent(`Help me improve this prompt for a large language model. Suggest 3 variations to make it more effective. Prompt: "${prompt}"`, "You are a prompt engineering expert.");
-    
+
 export const explainAiReasoning = (output: string, originalPrompt: string) =>
     streamContent(`Explain your reasoning for the following output, given the original prompt. Prompt: "${originalPrompt}"\nOutput: "${output}"`, "You are an explainable AI (XAI) system.");
-    
+
 export const getContextualAiActions = (context: string) =>
     streamContent(`What can AI do here? Based on the context, list all relevant AI actions available in this toolkit. Context: ${context}`, "You are a helpful assistant for the DevCore AI Toolkit.");
-    
+
 export const explainAiConcept = (concept: string) =>
     streamContent(`Explain the following AI concept in simple terms, as if to a beginner: "${concept}"`, "You are an AI educator.");
-    
+
 export const editCollaborativeDocument = (document: string, edits: string) =>
     streamContent(`Incorporate the following edits into the document, resolving any minor conflicts. Document:\n${document}\nEdits:\n${edits}`, "You are a collaborative editor.");
 
@@ -588,7 +588,7 @@ export const generateTeamUpdate = (gitLog: string) =>
 
 export const resolveMergeConflict = (conflictFile: string) =>
     streamContent(`Analyze this merge conflict file and suggest an optimal resolution. File:\n${conflictFile}`, "You are a senior software engineer expert in Git.");
-    
+
 export const suggestCodeReviewers = (diff: string) =>
     streamContent(`Based on this code diff, suggest 2-3 of the most relevant people to review it from the following list of engineers: [alice, bob, charlie, dave]. Diff:\n${diff}`, "You are a code review assignment bot.");
 
@@ -612,10 +612,10 @@ export const generatePoem = (prompt: string) =>
 
 export const generateMarketingCampaign = (product: string) =>
     streamContent(`Generate a high-level marketing campaign outline for this product: ${product}`, "You are a marketing strategist.");
-    
+
 export const generateResearchOutline = (topic: string) =>
     streamContent(`Generate a structured outline for a research paper on this topic: "${topic}"`, "You are a research assistant.");
-    
+
 export const adviseOnPrivacy = (sharingContext: string) =>
     streamContent(`Advise on the privacy implications of this file sharing scenario: "${sharingContext}"`, "You are a data privacy advisor.");
 
@@ -630,7 +630,7 @@ export const walkthroughFeature = (featureName: string) =>
 
 export const customizeZenMode = (preferences: string) =>
     streamContent(`Based on these preferences, describe a customized "Zen Mode" UI for a focused work session: "${preferences}"`, "You are a UI customization expert.");
-    
+
 export const explainFeature = (featureName: string) =>
     streamContent(`Provide a detailed explanation and usage examples for the feature named "${featureName}".`, "You are a helpful AI assistant for this toolkit.");
 
@@ -642,10 +642,10 @@ export const analyzeDiskSpace = (usageData: string) =>
 
 export const optimizeProjectStorage = (fileList: string) =>
     streamContent(`Analyze this project folder's file list and suggest ways to optimize its storage footprint (e.g., compressing assets, removing caches). Files:\n${fileList}`, "You are a storage optimization expert.");
-    
+
 export const summarizeMeetingNotes = (notes: string) =>
     streamContent(`Summarize these meeting notes and automatically format them for sharing:\n${notes}`, "You are an executive assistant.");
-    
+
 export const findCollaborators = (projectDescription: string) =>
     streamContent(`Based on this project description, suggest the types of collaborators or roles that would be beneficial to the team:\n${projectDescription}`, "You are a project management assistant.");
 
@@ -654,13 +654,13 @@ export const aggregateFeedback = (feedbackList: string) =>
 
 export const generateGameAssets = (description: string) =>
     streamContent(`Describe a set of 2D game assets (e.g., character sprites, tiles) based on this description: "${description}"`, "You are a game asset designer.");
-    
+
 export const verifyContentAuthenticity = (content: string) =>
     streamContent(`Analyze this text content for signs of AI generation or manipulation and provide an authenticity report:\n"${content.substring(0, 1000)}"`, "You are a content authenticity expert.");
 
 export const generateExplainabilityReport = (modelDescription: string) =>
     streamContent(`Generate a simplified explainability report (e.g., using SHAP or LIME concepts) for an AI model described as: "${modelDescription}"`, "You are an AI ethics and explainability expert.");
-    
+
 // --- Round 1 of 50 new functions ---
 export const suggestAccessPermissions = (context: string) => streamContent(`Based on the context "${context}", suggest optimal file access permissions (e.g., read-only, read-write) for different team roles (admin, developer, viewer).`, "You are a security administrator.");
 export const cleanupDownloads = (fileList: string) => streamContent(`Categorize the following files from a Downloads folder and suggest target folders for each. Files:\n${fileList}`, "You are a file organization assistant.");
@@ -720,3 +720,154 @@ export const suggestFeatureEngineering = (problem: string) => streamContent(`For
 export const generateModelEvaluationReport = (metrics: string) => streamContent(`Write a model evaluation report based on these metrics: ${metrics}`, "You are a data scientist.");
 export const draftAiEthicsStatement = (project: string) => streamContent(`Draft an AI ethics and transparency statement for a project described as: "${project}"`, "You are an AI ethics specialist.");
 export const generateSyntheticData = (schema: string) => streamContent(`Generate a realistic but fake CSV dataset for testing based on this schema: "${schema}"`, "You are a synthetic data generator.");
+
+// --- Round 2 of 50 new functions ---
+export const generateResourceAllocationPlan = (projectPlan: string) =>
+    streamContent(`Based on the following project plan, generate a detailed resource allocation plan including personnel, budget, and time estimates. Project Plan:\n${projectPlan}`, "You are an expert project resource manager.");
+
+export const trackProjectDependencies = (projectFiles: string) =>
+    streamContent(`Analyze the provided list of project files and infer their dependencies, outlining potential bottlenecks or critical paths. Files:\n${projectFiles}`, "You are a software dependency analyst.");
+
+export const conductRetrospective = (incidentReport: string) =>
+    streamContent(`Conduct a blameless retrospective based on the incident report, identifying root causes, lessons learned, and actionable improvements. Incident Report:\n${incidentReport}`, "You are a DevOps incident manager.");
+
+export const enforceSecurityPolicies = (policyDoc: string, code: string) =>
+    streamContent(`Review the given code against the specified security policies. Highlight violations and suggest fixes. Policy:\n${policyDoc}\nCode:\n\`\`\`${code}\`\`\``, "You are a security policy enforcement agent.");
+
+export const auditCompliance = (regulations: string, projectDoc: string) =>
+    streamContent(`Audit the project documentation against the following regulations, pointing out areas of non-compliance and suggesting remedies. Regulations:\n${regulations}\nProject Docs:\n${projectDoc}`, "You are a compliance officer.");
+
+export const debugPerformanceIssue = (logs: string, code: string) =>
+    streamContent(`Analyze the provided system logs and code snippet to pinpoint performance bottlenecks and suggest optimization strategies. Logs:\n${logs}\nCode:\n\`\`\`${code}\`\`\``, "You are a performance engineering expert.");
+
+export const suggestArchitecturalDecision = (problem: string) =>
+    streamContent(`Given the architectural problem: "${problem}", suggest multiple architectural patterns or solutions with their pros and cons.`, "You are a senior software architect.");
+
+export const generateInteractiveStory = (genre: string, theme: string) =>
+    streamContent(`Generate the branching narrative and dialogue for a short interactive story in the "${genre}" genre, with the theme of "${theme}".`, "You are a creative narrative designer.");
+
+export const designLessonPlan = (topic: string, audience: string) =>
+    streamContent(`Design a comprehensive lesson plan for teaching "${topic}" to a "${audience}" audience. Include objectives, activities, and assessment methods.`, "You are an experienced educator.");
+
+export const generateArtisticStyleDescription = (imageDescription: string) =>
+    streamContent(`Based on the image description: "${imageDescription}", generate a detailed description of its artistic style, suitable for an art historian or prompt for an image generator.`, "You are an art critic and AI art prompt engineer.");
+
+export const optimizeServerlessFunctions = (code: string, usageData: string) =>
+    streamContent(`Analyze the provided serverless function code and usage data to suggest optimizations for cost, latency, and cold start times. Code:\n\`\`\`${code}\`\`\`\nUsage Data:\n${usageData}`, "You are a serverless architecture expert.");
+
+export const configureEdgeNetwork = (trafficPattern: string) =>
+    streamContent(`Based on the expected traffic pattern: "${trafficPattern}", generate a configuration outline for an edge network, including CDN, caching, and routing rules.`, "You are an expert in edge computing and network architecture.");
+
+export const analyzeNetworkTraffic = (trafficLogs: string) =>
+    streamContent(`Analyze the following network traffic logs to identify anomalies, potential security threats, or performance issues. Logs:\n${trafficLogs}`, "You are a network security and performance analyst.");
+
+export const explainMlModelOutput = (modelOutput: string, inputData: string) =>
+    streamContent(`Given this ML model output and corresponding input data, explain in simple terms why the model arrived at this specific output. Output:\n${modelOutput}\nInput:\n${inputData}`, "You are an expert in Machine Learning explainability (XAI).");
+
+export const versionDataset = (datasetMetadata: string) =>
+    streamContent(`Based on the dataset's metadata, suggest a versioning strategy and a method for tracking changes over time. Metadata:\n${datasetMetadata}`, "You are a data management and MLOps specialist.");
+
+export const designMlOpsWorkflow = (modelRequirements: string) =>
+    streamContent(`Design a complete MLOps workflow for a model with the following requirements: "${modelRequirements}". Include data pipelines, training, deployment, and monitoring.`, "You are an MLOps engineer.");
+
+export const generateComponentLibrarySnippet = (componentType: string, framework: string) =>
+    streamContent(`Generate a reusable UI component snippet for a "${framework}" component library, specifically for a "${componentType}". Include best practices for accessibility and styling.`, "You are a frontend framework expert.");
+
+export const createAnimationKeyframes = (description: string) =>
+    streamContent(`Describe a CSS keyframe animation or a Lottie animation sequence based on the following visual description: "${description}".`, "You are a UI animator and motion designer.");
+
+export const auditAccessibility = (uiComponentCode: string) =>
+    streamContent(`Perform an accessibility audit on the provided UI component code. Identify WCAG violations and suggest ARIA attributes or structural changes. Code:\n\`\`\`${uiComponentCode}\`\`\``, "You are a web accessibility (a11y) consultant.");
+
+export const analyzePatentDocument = (patentText: string) =>
+    streamContent(`Analyze the provided patent document and extract key claims, novelty, and potential prior art categories. Patent Text:\n${patentText}`, "You are a patent analysis expert.");
+
+export const checkGdprCompliance = (dataProcessingDoc: string) =>
+    streamContent(`Review the following data processing documentation for GDPR compliance, highlighting any potential breaches or areas for improvement. Documentation:\n${dataProcessingDoc}`, "You are a data privacy legal expert.");
+
+export const designCurriculum = (subject: string, level: string) =>
+    streamContent(`Design a detailed curriculum for teaching "${subject}" at a "${level}" level. Include learning outcomes, modules, and project ideas.`, "You are an instructional designer.");
+
+export const explainProblemSolvingSteps = (problem: string) =>
+    streamContent(`Walk through the step-by-step process of solving the following problem, breaking it down into logical stages: "${problem}"`, "You are a problem-solving coach.");
+
+export const generateQuizQuestions = (topic: string, difficulty: string) =>
+    streamContent(`Generate 5 multiple-choice quiz questions on the topic of "${topic}" at a "${difficulty}" difficulty level, along with correct answers and brief explanations.`, "You are an educational content creator.");
+
+export const createInteractiveTutorial = (codeSnippet: string, concept: string) =>
+    streamContent(`Create an interactive tutorial script for explaining the concept "${concept}" using the provided code snippet as an example. Include explanations for each line. Code:\n\`\`\`${codeSnippet}\`\`\``, "You are an expert technical instructor.");
+
+export const generateCodeSandboxConfig = (dependencies: string, code: string) =>
+    streamContent(`Generate a \`sandbox.config.json\` or equivalent configuration for a code sandbox environment that includes these dependencies: "${dependencies}" and runs this code: \`\`\`${code}\`\`\``, "You are a code sandbox configuration expert.");
+
+export const recommendDatabaseSchema = (entities: string) =>
+    streamContent(`Based on the following description of data entities and their relationships, recommend an optimal relational database schema (SQL DDL) or NoSQL document structure. Entities:\n${entities}`, "You are a database architect.");
+
+export const generateApiGatewayConfig = (endpoints: string) =>
+    streamContent(`Generate a configuration for an API Gateway (e.g., AWS API Gateway, Kong) that routes and secures the following endpoints: ${endpoints}`, "You are a cloud networking and API management specialist.");
+
+export const simulateUserJourney = (persona: string, goal: string) =>
+    streamContent(`Simulate a detailed user journey for a "${persona}" trying to achieve the goal: "${goal}" within a typical application. Describe steps, thoughts, and potential pain points.`, "You are a UX researcher and user journey mapping expert.");
+
+export const generateReleaseNotes = (featureList: string, bugFixes: string) =>
+    streamContent(`Generate professional and user-friendly release notes from the following list of new features and bug fixes. Features:\n${featureList}\nBug Fixes:\n${bugFixes}`, "You are a technical writer for product releases.");
+
+export const createGlossary = (document: string) =>
+    streamContent(`Scan the following document and extract key technical terms, providing a concise definition for each to create a glossary. Document:\n${document}`, "You are a technical lexicographer.");
+
+export const generateInterviewQuestions = (role: string, level: string) =>
+    streamContent(`Generate 5 behavioral and 5 technical interview questions tailored for a "${level}" "${role}" position.`, "You are a senior HR professional and technical recruiter.");
+
+export const designSystemArchitecture = (requirements: string) =>
+    streamContent(`Based on these high-level system requirements, propose a scalable and resilient system architecture, detailing components and their interactions. Requirements:\n${requirements}`, "You are a principal software architect.");
+
+export const generateWhitepaperOutline = (topic: string) =>
+    streamContent(`Generate a comprehensive outline for a technical whitepaper on the topic: "${topic}". Include abstract, introduction, problem, solution, and conclusion sections.`, "You are an expert technical writer.");
+
+export const explainTechnicalConcept = (concept: string, targetAudience: string) =>
+    streamContent(`Explain the technical concept of "${concept}" to a "${targetAudience}" audience, using appropriate analogies and level of detail.`, "You are a technical communicator and educator.");
+
+export const suggestTeamBuildingActivity = (teamSize: string, objectives: string) =>
+    streamContent(`Suggest a team-building activity suitable for a team of "${teamSize}" people with the objectives of "${objectives}".`, "You are an organizational development consultant.");
+
+export const analyzeCustomerFeedback = (feedbackData: string) =>
+    streamContent(`Analyze the raw customer feedback data to identify common themes, sentiment, and actionable insights. Feedback Data:\n${feedbackData}`, "You are a customer insights analyst.");
+
+export const predictFutureTrends = (data: string) =>
+    streamContent(`Based on the provided historical data, identify patterns and predict potential future trends in the domain. Data:\n${data}`, "You are a data scientist specializing in trend analysis.");
+
+export const generateSocialMediaContent = (campaignGoal: string, product: string) =>
+    streamContent(`Generate three social media post ideas (for different platforms like Twitter, LinkedIn, Instagram) for a campaign with the goal "${campaignGoal}" promoting the product "${product}".`, "You are a digital marketing strategist.");
+
+export const planEventLogistics = (eventType: string, attendees: string) =>
+    streamContent(`Plan the key logistics for a "${eventType}" event with approximately "${attendees}" attendees. Include venue, catering, AV, and schedule considerations.`, "You are a professional event planner.");
+
+export const optimizeSupplyChain = (supplyChainData: string) =>
+    streamContent(`Analyze the provided supply chain data to identify inefficiencies and suggest optimizations for cost reduction and resilience. Supply Chain Data:\n${supplyChainData}`, "You are a supply chain management expert.");
+
+export const generateLegalClause = (context: string, requirement: string) =>
+    streamContent(`Draft a concise legal clause or disclaimer for the following context: "${context}", addressing the requirement: "${requirement}".`, "You are a legal AI assistant.");
+
+export const convertLegacyDataFormat = (data: string, fromFormat: string, toFormat: string) =>
+    streamContent(`Convert the following data from "${fromFormat}" format to "${toFormat}" format. Data:\n\`\`\`${data}\`\`\``, "You are a data format conversion expert.");
+
+export const createPersonalizedWorkoutPlan = (goal: string, preferences: string) =>
+    streamContent(`Create a personalized workout plan for an individual with the goal: "${goal}", considering their preferences: "${preferences}".`, "You are a certified personal trainer.");
+
+export const generateMealPlan = (dietaryNeeds: string, calories: string) =>
+    streamContent(`Generate a 7-day meal plan catering to "${dietaryNeeds}" and aiming for approximately "${calories}" calories per day.`, "You are a certified nutritionist.");
+
+export const troubleshootHardwareIssue = (symptoms: string) =>
+    streamContent(`Based on the reported symptoms: "${symptoms}", diagnose potential hardware issues and suggest troubleshooting steps.`, "You are a hardware diagnostics expert.");
+
+export const createEducationalContent = (topic: string, format: string) =>
+    streamContent(`Create engaging educational content about "${topic}" in a "${format}" format (e.g., short article, script for a video, interactive quiz).`, "You are an educational content designer.");
+
+export const generateInteractiveDemo = (featureDescription: string) =>
+    streamContent(`Describe the steps and visual elements for an interactive product demo showcasing the feature: "${featureDescription}".`, "You are a product demonstration specialist.");
+
+export const evaluateSoftwareVendor = (vendorProfile: string, requirements: string) =>
+    streamContent(`Evaluate the provided software vendor profile against the specified project requirements and provide a recommendation. Vendor Profile:\n${vendorProfile}\nRequirements:\n${requirements}`, "You are a software procurement analyst.");
+
+export const generateDataRetentionPolicy = (dataType: string, regulations: string) =>
+    streamContent(`Draft a data retention policy for "${dataType}" based on the following regulations and best practices: "${regulations}".`, "You are a data governance expert.");
