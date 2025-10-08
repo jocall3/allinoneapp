@@ -1,7 +1,225 @@
-// Copyright James Burvel O’Callaghan III
+// Copyright James Burvel Oâ€™Callaghan III
 // President Citibank Demo Business Inc.
 
+// --- Core Arithmetic Functions (32-bit integers) ---
 
+/**
+ * Adds two 32-bit integers.
+ * @param a The first integer.
+ * @param b The second integer.
+ * @returns The sum of `a` and `b`.
+ */
 export func add(a: i32, b: i32): i32 {
   return a + b;
 }
+
+/**
+ * Subtracts the second 32-bit integer from the first.
+ * @param a The minuend.
+ * @param b The subtrahend.
+ * @returns The difference `a - b`.
+ */
+export func subtract(a: i32, b: i32): i32 {
+  return a - b;
+}
+
+/**
+ * Multiplies two 32-bit integers.
+ * @param a The first integer.
+ * @param b The second integer.
+ * @returns The product of `a` and `b`.
+ */
+export func multiply(a: i32, b: i32): i32 {
+  return a * b;
+}
+
+/**
+ * Divides the numerator by the denominator, returning the integer quotient.
+ * Handles division by zero by returning 0.
+ * In a production-grade financial system, division by zero would typically
+ * trigger an explicit error, throw an exception, or return a specialized
+ * error code if supported by the runtime environment. For an `i32` return,
+ * 0 is used as a non-crashing fallback.
+ * @param numerator The dividend.
+ * @param denominator The divisor.
+ * @returns The integer quotient `numerator / denominator`, or 0 if `denominator` is zero.
+ */
+export func divide(numerator: i32, denominator: i32): i32 {
+  if (denominator == 0) {
+    // A robust system would log this or surface an error to the caller.
+    return 0;
+  }
+  return numerator / denominator;
+}
+
+/**
+ * Calculates the absolute value of a 32-bit integer.
+ * @param value The integer.
+ * @returns The absolute value of `value`.
+ */
+export func abs(value: i32): i32 {
+  return value < 0 ? -value : value;
+}
+
+/**
+ * Returns the smaller of two 32-bit integers.
+ * @param a The first integer.
+ * @param b The second integer.
+ * @returns The smaller of `a` and `b`.
+ */
+export func min(a: i32, b: i32): i32 {
+  return a < b ? a : b;
+}
+
+/**
+ * Returns the larger of two 32-bit integers.
+ * @param a The first integer.
+ * @param b The second integer.
+ * @returns The larger of `a` and `b`.
+ */
+export func max(a: i32, b: i32): i32 {
+  return a > b ? a : b;
+}
+
+/**
+ * Clamps a 32-bit integer value between a minimum and maximum value.
+ * Ensures the returned value is not less than `minVal` and not greater than `maxVal`.
+ * @param value The integer to clamp.
+ * @param minVal The minimum allowed value.
+ * @param maxVal The maximum allowed value.
+ * @returns The clamped value.
+ */
+export func clamp(value: i32, minVal: i32, maxVal: i32): i32 {
+  return max(minVal, min(value, maxVal));
+}
+
+// --- Financial Calculation Functions (using f64 for precision) ---
+
+/**
+ * Calculates the simple interest earned or paid.
+ * Formula: Interest = Principal * AnnualRate * TimeInYears
+ * Robust error handling for invalid inputs (e.g., negative principal)
+ * would involve returning specific error codes or throwing exceptions
+ * in a "market ready" system. Here, 0.0 is returned as a safe default.
+ * @param principal The initial amount of money. Must be non-negative.
+ * @param annualRate The annual interest rate as a decimal (e.g., 0.05 for 5%). Must be non-negative.
+ * @param timeInYears The time period in years. Must be non-negative.
+ * @returns The calculated simple interest (f64), or 0.0 if inputs are invalid.
+ */
+export func calculateSimpleInterest(principal: f64, annualRate: f64, timeInYears: f64): f64 {
+  if (principal < 0 || annualRate < 0 || timeInYears < 0) {
+      // Invalid input scenario.
+      return 0.0;
+  }
+  return principal * annualRate * timeInYears;
+}
+
+/**
+ * Calculates the total amount after compound interest.
+ * Formula: Amount = Principal * (1 + AnnualRate / CompoundingPeriodsPerYear)^(CompoundingPeriodsPerYear * TotalYears)
+ * @param principal The initial amount of money. Must be non-negative.
+ * @param annualRate The annual interest rate as a decimal (e.g., 0.05 for 5%). Must be non-negative.
+ * @param compoundingPeriodsPerYear The number of times interest is compounded per year (e.g., 1 for annually, 12 for monthly). Must be positive.
+ * @param totalYears The total number of years the money is invested or borrowed for. Must be non-negative.
+ * @returns The total amount after compound interest (f64), or 0.0 if inputs are invalid.
+ */
+export func calculateCompoundInterest(
+  principal: f64,
+  annualRate: f64,
+  compoundingPeriodsPerYear: f64,
+  totalYears: f64
+): f64 {
+  if (principal < 0 || annualRate < 0 || compoundingPeriodsPerYear <= 0 || totalYears < 0) {
+      // Invalid input scenario.
+      return 0.0;
+  }
+  const ratePerPeriod = annualRate / compoundingPeriodsPerYear;
+  const numberOfPeriods = compoundingPeriodsPerYear * totalYears;
+  // Math.pow(base, exponent) is a standard library function in AssemblyScript.
+  return principal * Math.pow(1.0 + ratePerPeriod, numberOfPeriods);
+}
+
+/**
+ * Calculates the future value (FV) of an investment or loan.
+ * Formula: FV = PV * (1 + RatePerPeriod)^NumberOfPeriods
+ * @param presentValue The current value of an investment or loan. Must be non-negative.
+ * @param ratePerPeriod The interest rate per compounding period as a decimal (e.g., 0.005 for 0.5% monthly). Must be greater than -1.0.
+ * @param numberOfPeriods The total number of compounding periods. Must be non-negative.
+ * @returns The future value (f64), or 0.0 if inputs are invalid.
+ */
+export func calculateFutureValue(presentValue: f64, ratePerPeriod: f64, numberOfPeriods: f64): f64 {
+  if (presentValue < 0 || ratePerPeriod <= -1.0 || numberOfPeriods < 0) {
+      // Invalid input scenario. A rate of -1.0 or less means total loss, leading to 0 or negative future value.
+      return 0.0;
+  }
+  return presentValue * Math.pow(1.0 + ratePerPeriod, numberOfPeriods);
+}
+
+/**
+ * Calculates the present value (PV) of a future amount.
+ * Formula: PV = FV / (1 + RatePerPeriod)^NumberOfPeriods
+ * @param futureValue The desired future value. Must be non-negative.
+ * @param ratePerPeriod The interest rate per compounding period as a decimal. Must be greater than -1.0.
+ * @param numberOfPeriods The total number of compounding periods. Must be non-negative.
+ * @returns The present value (f64), or 0.0 if inputs are invalid or discount factor is problematic.
+ */
+export func calculatePresentValue(futureValue: f64, ratePerPeriod: f64, numberOfPeriods: f64): f64 {
+  if (futureValue < 0 || ratePerPeriod <= -1.0 || numberOfPeriods < 0) {
+      // Invalid input scenario.
+      return 0.0;
+  }
+  const discountFactor = Math.pow(1.0 + ratePerPeriod, numberOfPeriods);
+  if (discountFactor == 0.0) {
+      // This can happen if (1 + ratePerPeriod) is exactly 0 and numberOfPeriods is not 0.
+      // Or if Math.pow results in 0 due to extreme values. Avoid division by zero.
+      return 0.0;
+  }
+  return futureValue / discountFactor;
+}
+
+/**
+ * Calculates the periodic payment for a loan or annuity.
+ * Formula: PMT = [ r * PV ] / [ 1 - (1 + r)^-n ]
+ * Where r = ratePerPeriod, n = numberOfPayments, PV = loanAmount (principal).
+ * This formula assumes payments are made at the end of each period.
+ * @param loanAmount The principal amount of the loan. Must be non-negative.
+ * @param ratePerPeriod The interest rate per payment period as a decimal (e.g., 0.005 for 0.5% monthly). Must be non-negative.
+ * @param numberOfPayments The total number of payments. Must be positive.
+ * @returns The periodic payment amount (f64), or 0.0 for invalid inputs or if `ratePerPeriod` is 0.
+ */
+export func calculateLoanPayment(loanAmount: f64, ratePerPeriod: f64, numberOfPayments: f64): f64 {
+  if (loanAmount < 0 || ratePerPeriod < 0 || numberOfPayments <= 0) {
+      // Invalid input scenario.
+      return 0.0;
+  }
+
+  if (ratePerPeriod == 0.0) {
+    // If rate is 0, payment is simply principal divided by number of payments.
+    return loanAmount / numberOfPayments;
+  }
+
+  const term = Math.pow(1.0 + ratePerPeriod, -numberOfPayments);
+  const denominator = 1.0 - term;
+
+  if (denominator == 0.0) {
+      // This edge case might indicate an issue with inputs or floating point precision.
+      // Safely return 0.0 to prevent division by zero.
+      return 0.0;
+  }
+
+  return (ratePerPeriod * loanAmount) / denominator;
+}
+
+// --- Mathematical Constants (for general utility, often used in scientific/engineering contexts) ---
+
+/**
+ * Mathematical constant PI, approximately 3.141592653589793.
+ * Represents the ratio of a circle's circumference to its diameter.
+ */
+export const PI: f64 = 3.141592653589793;
+
+/**
+ * Mathematical constant E (Euler's number), approximately 2.718281828459045.
+ * The base of the natural logarithm.
+ */
+export const E: f64 = 2.718281828459045;
