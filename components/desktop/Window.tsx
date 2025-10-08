@@ -8,7 +8,7 @@ import type { WindowState } from '../../types.ts';
 // Common project structure assumes components are under a 'src' directory,
 // where 'components/desktop' would be 'src/components/desktop' and 'ui' would be 'src/ui'.
 // This adjustment (adding an extra '..') helps resolve 'src/ui' from 'src/components/desktop'.
-import { LoadingSpinner } from '../../ui/LoadingSpinner';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
 import Icon from '../ui/Icon';
 import { FEATURES_MAP } from '../features/index.ts';
 import { useAppStore } from '../../store/useAppStore.ts';
