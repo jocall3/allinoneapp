@@ -1,4 +1,5 @@
-// Copyright James Burvel Oâ€™Callaghan III
+```typescript
+// Copyright James Burvel OÃ¢â‚¬â„¢Callaghan III
 // President Citibank Demo Business Inc.
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -8,10 +9,20 @@ import type { Feature } from '../../types.ts';
 // --- Local Storage Keys ---
 const LS_KEY_PINNED_FEATURES = 'feature_dock_pinned_features';
 const LS_KEY_RECENT_FEATURES = 'feature_dock_recent_features';
+const LS_KEY_DOCK_PREFERENCES = 'feature_dock_preferences'; // NEW: For user-specific dock settings
 const MAX_RECENT_FEATURES = 10; // Limit for recently used features
 
-// --- Local Storage Helper Functions ---
-const getLocalStorageItem = <T>(key: string, defaultValue: T): T => {
+// --- New Interfaces and Default Preferences ---
+export type FeatureSortOrder = 'default' | 'name-asc' | 'name-desc' | 'category-asc' | 'category-desc';
+export interface FeatureDockPreferences {
+    sortOrder: FeatureSortOrder;
+}
+const DEFAULT_DOCK_PREFERENCES: FeatureDockPreferences = {
+    sortOrder: 'default',
+};
+
+// --- Local Storage Helper Functions (Fixes build error by adding 'extends unknown' to generic types) ---
+const getLocalStorageItem = <T extends unknown>(key: string, defaultValue: T): T => {
     try {
         const item = localStorage.getItem(key);
         return item ? JSON.parse(item) : defaultValue;
@@ -21,12 +32,30 @@ const getLocalStorageItem = <T>(key: string, defaultValue: T): T => {
     }
 };
 
-const setLocalStorageItem = <T>(key: string, value: T) => {
+const setLocalStorageItem = <T extends unknown>(key: string, value: T) => {
     try {
         localStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
         console.error(`Error writing to localStorage for key "${key}":`, error);
     }
+};
+
+// --- Utility Hooks ---
+// NEW: useDebounce hook for search input
+export const useDebounce = <T>(value: T, delay: number): T => {
+    const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedValue(value);
+        }, delay);
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [value, delay]);
+
+    return debouncedValue;
 };
 
 // --- Exported FeatureContextMenu Component ---
@@ -137,33 +166,91 @@ export const FeatureDetailsModal: React.FC<FeatureDetailsModalProps> = ({ featur
     );
 };
 
-// --- FeatureButton Component (enhanced) ---
+// --- FeatureButton Component (enhanced with drag & drop props) ---
 interface FeatureButtonProps {
     feature: Feature;
     onOpen: (id: string) => void;
     onContextMenu: (event: React.MouseEvent, feature: Feature) => void;
     isPinned?: boolean;
+    // NEW Drag and Drop Props
+    draggable?: boolean;
+    onDragStart?: (event: React.DragEvent, id: string) => void;
+    onDragEnter?: (event: React.DragEvent, id: string) => void;
+    onDragLeave?: (event: React.DragEvent, id: string) => void;
+    onDragEnd?: (event: React.DragEvent) => void;
+    onDrop?: (event: React.DragEvent, id: string) => void;
+    onDragOver?: (event: React.DragEvent) => void;
+    isDraggingOver?: boolean; // NEW: to apply visual feedback during drag
 }
 
-const FeatureButton: React.FC<FeatureButtonProps> = ({ feature, onOpen, onContextMenu, isPinned }) => {
+const FeatureButton: React.FC<FeatureButtonProps> = ({
+    feature,
+    onOpen,
+    onContextMenu,
+    isPinned,
+    // NEW D&D
+    draggable = false,
+    onDragStart,
+    onDragEnter,
+    onDragLeave,
+    onDragEnd,
+    onDrop,
+    onDragOver,
+    isDraggingOver,
+}) => {
     const handleContextMenu = (e: React.MouseEvent) => {
         e.preventDefault(); // Prevent default browser context menu
         onContextMenu(e, feature);
     };
 
+    const handleDragStart = (e: React.DragEvent) => {
+        if (onDragStart) onDragStart(e, feature.id);
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', feature.id); // Set data for drag operation
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault(); // Prevent default browser behavior
+        if (onDrop) onDrop(e, feature.id);
+    };
+
+    const handleDragEnter = (e: React.DragEvent) => {
+        e.preventDefault(); // Required to allow drop
+        if (onDragEnter) onDragEnter(e, feature.id);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        if (onDragLeave) onDragLeave(e, feature.id);
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault(); // Required to allow drop
+        if (onDragOver) onDragOver(e);
+        e.dataTransfer.dropEffect = 'move';
+    };
+
+    const buttonClass = `relative w-24 h-24 flex flex-col items-center justify-center p-2 rounded-lg bg-surface/50 hover:bg-surface/80 transition-colors group border ${
+        isPinned ? 'border-primary' : 'border-transparent hover:border-border'
+    } ${isDraggingOver ? 'ring-2 ring-blue-400' : ''}`; // Added dragging over style
+
     return (
         <button
             onClick={() => onOpen(feature.id)}
             onContextMenu={handleContextMenu}
-            className={`relative w-24 h-24 flex flex-col items-center justify-center p-2 rounded-lg bg-surface/50 hover:bg-surface/80 transition-colors group border ${
-                isPinned ? 'border-primary' : 'border-transparent hover:border-border'
-            }`}
+            draggable={draggable}
+            onDragStart={draggable ? handleDragStart : undefined}
+            onDragEnter={draggable ? handleDragEnter : undefined}
+            onDragLeave={draggable ? handleDragLeave : undefined}
+            onDragEnd={draggable ? onDragEnd : undefined}
+            onDrop={draggable ? handleDrop : undefined}
+            onDragOver={draggable ? handleDragOver : undefined}
+            className={buttonClass}
             title={feature.name}
             aria-label={feature.name}
         >
             {isPinned && (
                 <span className="absolute top-1 right-1 text-xs text-primary bg-background rounded-full px-1 py-0.5" aria-hidden="true">
-                    ★
+                    â˜…
                 </span>
             )}
             <div className="text-primary group-hover:scale-110 transition-transform text-2xl">{feature.icon}</div>
@@ -181,9 +268,11 @@ interface FeatureDockProps {
 
 export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
     const [searchTerm, setSearchTerm] = useState('');
+    const debouncedSearchTerm = useDebounce(searchTerm, 300); // NEW: Debounced search term
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [pinnedFeatureIds, setPinnedFeatureIds] = useState<string[]>([]);
     const [recentFeatureIds, setRecentFeatureIds] = useState<string[]>([]);
+    const [dockPreferences, setDockPreferences] = useState<FeatureDockPreferences>(DEFAULT_DOCK_PREFERENCES); // NEW: Dock preferences
 
     // State for context menu and details modal
     const [contextMenuState, setContextMenuState] = useState<{
@@ -192,10 +281,15 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
     } | null>(null);
     const [detailsModalFeature, setDetailsModalFeature] = useState<Feature | null>(null);
 
-    // Load pinned and recent features from localStorage on mount
+    // NEW: States for drag & drop reordering of pinned items
+    const [draggingFeatureId, setDraggingFeatureId] = useState<string | null>(null);
+    const [dragOverFeatureId, setDragOverFeatureId] = useState<string | null>(null);
+
+    // Load state from localStorage on mount
     useEffect(() => {
         setPinnedFeatureIds(getLocalStorageItem(LS_KEY_PINNED_FEATURES, []));
         setRecentFeatureIds(getLocalStorageItem(LS_KEY_RECENT_FEATURES, []));
+        setDockPreferences(getLocalStorageItem(LS_KEY_DOCK_PREFERENCES, DEFAULT_DOCK_PREFERENCES)); // NEW
     }, []);
 
     // Save pinned features to localStorage whenever it changes
@@ -207,6 +301,12 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
     useEffect(() => {
         setLocalStorageItem(LS_KEY_RECENT_FEATURES, recentFeatureIds.slice(0, MAX_RECENT_FEATURES));
     }, [recentFeatureIds]);
+
+    // Save dock preferences to localStorage whenever it changes
+    useEffect(() => {
+        setLocalStorageItem(LS_KEY_DOCK_PREFERENCES, dockPreferences); // NEW
+    }, [dockPreferences]);
+
 
     // Add a feature to the recent list
     const addRecentFeature = useCallback((featureId: string) => {
@@ -231,6 +331,16 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
                 return [...prev, featureId];
             }
         });
+    }, []);
+
+    // NEW: Handle clearing recent features
+    const handleClearRecentFeatures = useCallback(() => {
+        setRecentFeatureIds([]);
+    }, []);
+
+    // NEW: Handle sort order change
+    const handleSortOrderChange = useCallback((order: FeatureSortOrder) => {
+        setDockPreferences(prev => ({ ...prev, sortOrder: order }));
     }, []);
 
     // Context menu handlers
@@ -262,40 +372,123 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
         setDetailsModalFeature(null);
     }, []);
 
+    // NEW: Drag and drop handlers for reordering pinned features
+    const handleDragStart = useCallback((event: React.DragEvent, id: string) => {
+        setDraggingFeatureId(id);
+        event.dataTransfer.effectAllowed = 'move';
+        // Add a visual cue to the dragged item
+        const target = event.currentTarget as HTMLButtonElement;
+        target.classList.add('opacity-50', 'border-dashed', 'border-2', 'border-blue-500');
+    }, []);
+
+    const handleDragEnter = useCallback((event: React.DragEvent, id: string) => {
+        event.preventDefault();
+        setDragOverFeatureId(id);
+    }, []);
+
+    const handleDragLeave = useCallback((event: React.DragEvent, id: string) => {
+        if (dragOverFeatureId === id) {
+            setDragOverFeatureId(null);
+        }
+    }, [dragOverFeatureId]);
+
+    const handleDragEnd = useCallback((event: React.DragEvent) => {
+        setDraggingFeatureId(null);
+        setDragOverFeatureId(null);
+        // Remove the visual cue from the dragged item
+        const target = event.currentTarget as HTMLButtonElement;
+        target.classList.remove('opacity-50', 'border-dashed', 'border-2', 'border-blue-500');
+    }, []);
+
+    const handleDrop = useCallback((event: React.DragEvent, targetId: string) => {
+        event.preventDefault();
+        if (draggingFeatureId && draggingFeatureId !== targetId) {
+            setPinnedFeatureIds(prevPinnedIds => {
+                const newPinnedIds = [...prevPinnedIds];
+                const sourceIndex = newPinnedIds.indexOf(draggingFeatureId);
+                const targetIndex = newPinnedIds.indexOf(targetId);
+
+                if (sourceIndex !== -1 && targetIndex !== -1) {
+                    const [draggedItem] = newPinnedIds.splice(sourceIndex, 1);
+                    newPinnedIds.splice(targetIndex, 0, draggedItem);
+                    return newPinnedIds;
+                }
+                return prevPinnedIds;
+            });
+        }
+        setDraggingFeatureId(null);
+        setDragOverFeatureId(null);
+    }, [draggingFeatureId]);
+
+    const handleDragOver = useCallback((event: React.DragEvent) => {
+        event.preventDefault(); // Essential to allow a drop
+        event.dataTransfer.dropEffect = 'move';
+    }, []);
+
     // Memoized list of unique categories for filtering
     const uniqueCategories = useMemo(() => {
         const categories = new Set(ALL_FEATURES.map(f => f.category));
         return ['All', ...Array.from(categories).sort()];
     }, []);
 
-    // Memoized filtered features based on search term and selected category
+    // NEW: Helper to apply sorting based on current preferences
+    const applySortOrder = useCallback((features: Feature[]): Feature[] => {
+        const order = dockPreferences.sortOrder;
+        if (order === 'default') return features;
+
+        return [...features].sort((a, b) => {
+            const nameA = a.name.toLowerCase();
+            const nameB = b.name.toLowerCase();
+            const categoryA = a.category.toLowerCase();
+            const categoryB = b.category.toLowerCase();
+
+            if (order === 'name-asc') return nameA.localeCompare(nameB);
+            if (order === 'name-desc') return nameB.localeCompare(nameA);
+            if (order === 'category-asc') {
+                if (categoryA === categoryB) return nameA.localeCompare(nameB);
+                return categoryA.localeCompare(categoryB);
+            }
+            if (order === 'category-desc') {
+                if (categoryA === categoryB) return nameA.localeCompare(nameB);
+                return categoryB.localeCompare(categoryA);
+            }
+            return 0;
+        });
+    }, [dockPreferences.sortOrder]);
+
+    // Memoized filtered features based on debounced search term and selected category
     const filteredFeatures = useMemo(() => {
         let features = ALL_FEATURES;
         if (selectedCategory && selectedCategory !== 'All') {
             features = features.filter(f => f.category === selectedCategory);
         }
-        if (searchTerm) {
-            const lowerSearch = searchTerm.toLowerCase();
+        if (debouncedSearchTerm) { // Use debounced search term
+            const lowerSearch = debouncedSearchTerm.toLowerCase();
             features = features.filter(
                 f => f.name.toLowerCase().includes(lowerSearch) || f.category.toLowerCase().includes(lowerSearch)
             );
         }
         return features;
-    }, [searchTerm, selectedCategory]);
+    }, [debouncedSearchTerm, selectedCategory]); // Dependency updated to use debouncedSearchTerm
 
-    // Memoized lists for pinned and recent features
+    // Memoized and sorted lists for pinned, recent, and all features
     const pinnedFeaturesList = useMemo(() => {
-        return pinnedFeatureIds
+        const list = pinnedFeatureIds
             .map(id => ALL_FEATURES.find(f => f.id === id))
             .filter(Boolean) as Feature[];
-    }, [pinnedFeatureIds]);
+        return applySortOrder(list); // Apply sorting
+    }, [pinnedFeatureIds, applySortOrder]);
 
     const recentFeaturesList = useMemo(() => {
-        // Ensure recent features are actually available in ALL_FEATURES
-        return recentFeatureIds
+        const list = recentFeatureIds
             .map(id => ALL_FEATURES.find(f => f.id === id))
             .filter(Boolean) as Feature[];
-    }, [recentFeatureIds]);
+        return applySortOrder(list); // Apply sorting
+    }, [recentFeatureIds, applySortOrder]);
+
+    const sortedFilteredFeatures = useMemo(() => { // NEW: Sorted version of filtered features
+        return applySortOrder(filteredFeatures);
+    }, [filteredFeatures, applySortOrder]);
 
     return (
         <div className="absolute top-0 left-0 right-0 bg-surface/30 backdrop-blur-sm border-b border-border p-3 z-10">
@@ -304,7 +497,7 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
                 <input
                     type="text"
                     placeholder="Search all features..."
-                    value={searchTerm}
+                    value={searchTerm} // searchTerm (not debounced) for immediate UI feedback
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full px-4 py-2 mb-3 rounded-lg bg-background/80 border border-border focus:ring-2 focus:ring-primary focus:outline-none transition-shadow text-text-primary"
                     aria-label="Search features"
@@ -327,13 +520,33 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
                     ))}
                 </div>
 
+                {/* Sort Order Selection (NEW) */}
+                <div className="flex justify-center mb-4 gap-2">
+                    <span className="text-text-secondary self-center text-sm">Sort by:</span>
+                    <select
+                        value={dockPreferences.sortOrder}
+                        onChange={(e) => handleSortOrderChange(e.target.value as FeatureSortOrder)}
+                        className="bg-background/80 border border-border rounded-lg px-3 py-1 text-text-primary text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                        aria-label="Sort features by"
+                    >
+                        <option value="default">Default</option>
+                        <option value="name-asc">Name (A-Z)</option>
+                        <option value="name-desc">Name (Z-A)</option>
+                        <option value="category-asc">Category (A-Z)</option>
+                        <option value="category-desc">Category (Z-A)</option>
+                    </select>
+                </div>
+
                 {/* Main scrollable content area */}
                 <div className="flex-grow overflow-y-auto pb-4">
                     {/* Pinned Features Section */}
                     {pinnedFeaturesList.length > 0 && (
                         <div className="mb-6">
-                            <h3 className="text-lg font-semibold text-text-primary mb-3">Pinned Features</h3>
-                            <div className="flex flex-wrap gap-3 justify-center">
+                            <h3 className="text-lg font-semibold text-text-primary mb-3">Pinned Features (Drag to reorder)</h3>
+                            <div
+                                className="flex flex-wrap gap-3 justify-center"
+                                onDragOver={handleDragOver} // Allow drops over the container
+                            >
                                 {pinnedFeaturesList.map(feature => (
                                     <FeatureButton
                                         key={feature.id}
@@ -341,6 +554,14 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
                                         onOpen={handleOpenFeature}
                                         onContextMenu={handleOpenContextMenu}
                                         isPinned={true}
+                                        draggable={true} // Pinned features are draggable
+                                        onDragStart={handleDragStart}
+                                        onDragEnter={handleDragEnter}
+                                        onDragLeave={handleDragLeave}
+                                        onDragEnd={handleDragEnd}
+                                        onDrop={handleDrop}
+                                        onDragOver={handleDragOver} // Individual items also need drag over
+                                        isDraggingOver={dragOverFeatureId === feature.id && draggingFeatureId !== feature.id}
                                     />
                                 ))}
                             </div>
@@ -350,7 +571,16 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
                     {/* Recent Features Section */}
                     {recentFeaturesList.length > 0 && (
                         <div className="mb-6">
-                            <h3 className="text-lg font-semibold text-text-primary mb-3">Recently Used</h3>
+                            <div className="flex justify-between items-center mb-3">
+                                <h3 className="text-lg font-semibold text-text-primary">Recently Used</h3>
+                                {/* NEW: Clear Recent Button */}
+                                <button
+                                    onClick={handleClearRecentFeatures}
+                                    className="px-3 py-1 text-xs bg-background/80 text-text-secondary rounded-full hover:bg-background/60 transition-colors"
+                                >
+                                    Clear Recent
+                                </button>
+                            </div>
                             <div className="flex flex-wrap gap-3 justify-center">
                                 {recentFeaturesList.map(feature => (
                                     <FeatureButton
@@ -359,23 +589,25 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
                                         onOpen={handleOpenFeature}
                                         onContextMenu={handleOpenContextMenu}
                                         isPinned={pinnedFeatureIds.includes(feature.id)}
+                                        // Recent features are not draggable for reordering
                                     />
                                 ))}
                             </div>
                         </div>
                     )}
 
-                    {/* All Features Section (with Search/Category Filter) */}
+                    {/* All Features Section (with Search/Category Filter and Sorting) */}
                     <h3 className="text-lg font-semibold text-text-primary mb-3">All Features</h3>
                     <div className="flex flex-wrap gap-3 justify-center">
-                        {filteredFeatures.length > 0 ? (
-                            filteredFeatures.map(feature => (
+                        {sortedFilteredFeatures.length > 0 ? ( // Use sorted filtered list
+                            sortedFilteredFeatures.map(feature => (
                                 <FeatureButton
                                     key={feature.id}
                                     feature={feature}
                                     onOpen={handleOpenFeature}
                                     onContextMenu={handleOpenContextMenu}
                                     isPinned={pinnedFeatureIds.includes(feature.id)}
+                                    // All features are not draggable for reordering
                                 />
                             ))
                         ) : (
@@ -409,3 +641,4 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
         </div>
     );
 };
+```
