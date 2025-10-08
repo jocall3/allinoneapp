@@ -1,4 +1,4 @@
-
+```typescript
 // Copyright James Burvel OCallaghan III
 // President Citibank Demo Business Inc.
 
@@ -14,11 +14,18 @@ const MAX_RECENT_FEATURES = 10; // Limit for recently used features
 
 // --- New Interfaces and Default Preferences ---
 export type FeatureSortOrder = 'default' | 'name-asc' | 'name-desc' | 'category-asc' | 'category-desc';
+export type FeatureGridSize = 'small' | 'medium' | 'large'; // NEW: Grid size for feature buttons
 export interface FeatureDockPreferences {
     sortOrder: FeatureSortOrder;
+    gridSize: FeatureGridSize; // NEW
+    showRecentSection: boolean; // NEW: Toggle visibility of recent features section
+    showCategoryFilters: boolean; // NEW: Toggle visibility of category filter buttons
 }
 const DEFAULT_DOCK_PREFERENCES: FeatureDockPreferences = {
     sortOrder: 'default',
+    gridSize: 'medium', // NEW
+    showRecentSection: true, // NEW
+    showCategoryFilters: true, // NEW
 };
 
 // --- Local Storage Helper Functions (Fixes build error by adding 'extends unknown' to generic types) ---
@@ -41,8 +48,8 @@ const setLocalStorageItem = <T extends unknown>(key: string, value: T) => {
 };
 
 // --- Utility Hooks ---
-// NEW: useDebounce hook for search input
-export const useDebounce = <T>(value: T, delay: number): T => {
+// NEW: useDebounce hook for search input (Fixes build error by adding 'extends unknown' to generic type)
+export const useDebounce = <T extends unknown>(value: T, delay: number): T => {
     const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
     useEffect(() => {
@@ -166,7 +173,50 @@ export const FeatureDetailsModal: React.FC<FeatureDetailsModalProps> = ({ featur
     );
 };
 
-// --- FeatureButton Component (enhanced with drag & drop props) ---
+// --- NEW: ConfirmationModal Component ---
+export interface ConfirmationModalProps {
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    onCancel: () => void;
+    confirmText?: string;
+    cancelText?: string;
+}
+
+export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
+    title,
+    message,
+    onConfirm,
+    onCancel,
+    confirmText = 'Confirm',
+    cancelText = 'Cancel',
+}) => {
+    return (
+        <div className="fixed inset-0 bg-background/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-surface border border-border rounded-lg shadow-xl p-6 w-full max-w-sm">
+                <h3 className="text-xl font-semibold text-text-primary mb-4">{title}</h3>
+                <p className="text-text-secondary mb-6">{message}</p>
+                <div className="flex justify-end space-x-3">
+                    <button
+                        onClick={onCancel}
+                        className="px-4 py-2 bg-background/80 text-text-secondary rounded-lg hover:bg-background/60 transition-colors"
+                    >
+                        {cancelText}
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                        {confirmText}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+// --- FeatureButton Component (enhanced with drag & drop props and new grid size) ---
 interface FeatureButtonProps {
     feature: Feature;
     onOpen: (id: string) => void;
@@ -181,6 +231,7 @@ interface FeatureButtonProps {
     onDrop?: (event: React.DragEvent, id: string) => void;
     onDragOver?: (event: React.DragEvent) => void;
     isDraggingOver?: boolean; // NEW: to apply visual feedback during drag
+    gridSize?: FeatureGridSize; // NEW: for dynamic sizing
 }
 
 const FeatureButton: React.FC<FeatureButtonProps> = ({
@@ -197,6 +248,7 @@ const FeatureButton: React.FC<FeatureButtonProps> = ({
     onDrop,
     onDragOver,
     isDraggingOver,
+    gridSize = 'medium', // Default to medium if not provided
 }) => {
     const handleContextMenu = (e: React.MouseEvent) => {
         e.preventDefault(); // Prevent default browser context menu
@@ -229,9 +281,28 @@ const FeatureButton: React.FC<FeatureButtonProps> = ({
         e.dataTransfer.dropEffect = 'move';
     };
 
-    const buttonClass = `relative w-24 h-24 flex flex-col items-center justify-center p-2 rounded-lg bg-surface/50 hover:bg-surface/80 transition-colors group border ${
-        isPinned ? 'border-primary' : 'border-transparent hover:border-border'
-    } ${isDraggingOver ? 'ring-2 ring-blue-400' : ''}`; // Added dragging over style
+    // Dynamic classes based on gridSize
+    const featureButtonSizeClasses: Record<FeatureGridSize, string> = {
+        small: 'w-20 h-20 p-1',
+        medium: 'w-24 h-24 p-2',
+        large: 'w-32 h-32 p-3',
+    };
+
+    const iconSizeClasses: Record<FeatureGridSize, string> = {
+        small: 'text-xl',
+        medium: 'text-2xl',
+        large: 'text-3xl',
+    };
+
+    const nameTextSizeClasses: Record<FeatureGridSize, string> = {
+        small: 'text-[10px]',
+        medium: 'text-xs',
+        large: 'text-sm font-medium',
+    };
+
+    const buttonClass = `relative flex flex-col items-center justify-center rounded-lg bg-surface/50 hover:bg-surface/80 transition-colors group border ${
+        featureButtonSizeClasses[gridSize]
+    } ${isPinned ? 'border-primary' : 'border-transparent hover:border-border'} ${isDraggingOver ? 'ring-2 ring-blue-400' : ''}`;
 
     return (
         <button
@@ -249,12 +320,12 @@ const FeatureButton: React.FC<FeatureButtonProps> = ({
             aria-label={feature.name}
         >
             {isPinned && (
-                <span className="absolute top-1 right-1 text-xs text-primary bg-background rounded-full px-1 py-0.5" aria-hidden="true">
-                    â˜…
+                <span className={`absolute top-1 right-1 text-xs text-primary bg-background rounded-full px-1 py-0.5 ${gridSize === 'small' ? 'scale-75 origin-top-right' : ''}`} aria-hidden="true">
+                    &#9733; {/* Star icon */}
                 </span>
             )}
-            <div className="text-primary group-hover:scale-110 transition-transform text-2xl">{feature.icon}</div>
-            <span className="text-xs text-text-secondary mt-2 text-center w-full break-words line-clamp-2">
+            <div className={`text-primary group-hover:scale-110 transition-transform ${iconSizeClasses[gridSize]}`}>{feature.icon}</div>
+            <span className={`mt-2 text-center w-full break-words line-clamp-2 ${nameTextSizeClasses[gridSize]}`}>
                 {feature.name}
             </span>
         </button>
@@ -280,6 +351,7 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
         position: { x: number; y: number };
     } | null>(null);
     const [detailsModalFeature, setDetailsModalFeature] = useState<Feature | null>(null);
+    const [showClearRecentConfirm, setShowClearRecentConfirm] = useState(false); // NEW: Confirmation for clearing recent features
 
     // NEW: States for drag & drop reordering of pinned items
     const [draggingFeatureId, setDraggingFeatureId] = useState<string | null>(null);
@@ -503,46 +575,86 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
                     aria-label="Search features"
                 />
 
-                {/* Category Filters */}
-                <div className="flex flex-wrap gap-2 mb-4 justify-center">
-                    {uniqueCategories.map(category => (
-                        <button
-                            key={category}
-                            onClick={() => setSelectedCategory(category === 'All' ? null : category)}
-                            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                                selectedCategory === category || (category === 'All' && selectedCategory === null)
-                                    ? 'bg-primary text-white'
-                                    : 'bg-background/80 text-text-secondary hover:bg-background/60'
-                            }`}
+                {/* Category Filters (Conditional Rendering) */}
+                {dockPreferences.showCategoryFilters && (
+                    <div className="flex flex-wrap gap-2 mb-4 justify-center">
+                        {uniqueCategories.map(category => (
+                            <button
+                                key={category}
+                                onClick={() => setSelectedCategory(category === 'All' ? null : category)}
+                                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                                    selectedCategory === category || (category === 'All' && selectedCategory === null)
+                                        ? 'bg-primary text-white'
+                                        : 'bg-background/80 text-text-secondary hover:bg-background/60'
+                                }`}
+                            >
+                                {category}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {/* Sort Order Selection and Grid Size Selection (NEW) */}
+                <div className="flex justify-center mb-4 gap-4 flex-wrap">
+                    <div className="flex items-center gap-2">
+                        <span className="text-text-secondary text-sm">Sort by:</span>
+                        <select
+                            value={dockPreferences.sortOrder}
+                            onChange={(e) => handleSortOrderChange(e.target.value as FeatureSortOrder)}
+                            className="bg-background/80 border border-border rounded-lg px-3 py-1 text-text-primary text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                            aria-label="Sort features by"
                         >
-                            {category}
-                        </button>
-                    ))}
+                            <option value="default">Default</option>
+                            <option value="name-asc">Name (A-Z)</option>
+                            <option value="name-desc">Name (Z-A)</option>
+                            <option value="category-asc">Category (A-Z)</option>
+                            <option value="category-desc">Category (Z-A)</option>
+                        </select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-text-secondary text-sm">Grid Size:</span>
+                        <select
+                            value={dockPreferences.gridSize}
+                            onChange={(e) => setDockPreferences(prev => ({ ...prev, gridSize: e.target.value as FeatureGridSize }))}
+                            className="bg-background/80 border border-border rounded-lg px-3 py-1 text-text-primary text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                            aria-label="Select feature grid size"
+                        >
+                            <option value="small">Small</option>
+                            <option value="medium">Medium</option>
+                            <option value="large">Large</option>
+                        </select>
+                    </div>
                 </div>
 
-                {/* Sort Order Selection (NEW) */}
-                <div className="flex justify-center mb-4 gap-2">
-                    <span className="text-text-secondary self-center text-sm">Sort by:</span>
-                    <select
-                        value={dockPreferences.sortOrder}
-                        onChange={(e) => handleSortOrderChange(e.target.value as FeatureSortOrder)}
-                        className="bg-background/80 border border-border rounded-lg px-3 py-1 text-text-primary text-sm focus:ring-2 focus:ring-primary focus:outline-none"
-                        aria-label="Sort features by"
-                    >
-                        <option value="default">Default</option>
-                        <option value="name-asc">Name (A-Z)</option>
-                        <option value="name-desc">Name (Z-A)</option>
-                        <option value="category-asc">Category (A-Z)</option>
-                        <option value="category-desc">Category (Z-A)</option>
-                    </select>
+                {/* Section Visibility Toggles (NEW) */}
+                <div className="flex justify-center mb-4 gap-4 flex-wrap">
+                    <label className="flex items-center space-x-2 text-text-secondary text-sm cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={dockPreferences.showRecentSection}
+                            onChange={(e) => setDockPreferences(prev => ({ ...prev, showRecentSection: e.target.checked }))}
+                            className="form-checkbox h-4 w-4 text-primary rounded border-border focus:ring-primary"
+                        />
+                        <span>Show Recent Section</span>
+                    </label>
+                    <label className="flex items-center space-x-2 text-text-secondary text-sm cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={dockPreferences.showCategoryFilters}
+                            onChange={(e) => setDockPreferences(prev => ({ ...prev, showCategoryFilters: e.target.checked }))}
+                            className="form-checkbox h-4 w-4 text-primary rounded border-border focus:ring-primary"
+                        />
+                        <span>Show Category Filters</span>
+                    </label>
                 </div>
+
 
                 {/* Main scrollable content area */}
                 <div className="flex-grow overflow-y-auto pb-4">
                     {/* Pinned Features Section */}
-                    {pinnedFeaturesList.length > 0 && (
-                        <div className="mb-6">
-                            <h3 className="text-lg font-semibold text-text-primary mb-3">Pinned Features (Drag to reorder)</h3>
+                    <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-text-primary mb-3">Pinned Features (Drag to reorder)</h3>
+                        {pinnedFeaturesList.length > 0 ? (
                             <div
                                 className="flex flex-wrap gap-3 justify-center"
                                 onDragOver={handleDragOver} // Allow drops over the container
@@ -562,37 +674,53 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
                                         onDrop={handleDrop}
                                         onDragOver={handleDragOver} // Individual items also need drag over
                                         isDraggingOver={dragOverFeatureId === feature.id && draggingFeatureId !== feature.id}
+                                        gridSize={dockPreferences.gridSize} // Pass gridSize
                                     />
                                 ))}
                             </div>
-                        </div>
-                    )}
+                        ) : (
+                            // NEW: Empty state for pinned features
+                            <div className="p-4 text-center text-text-secondary bg-background/50 rounded-lg border border-dashed border-border">
+                                <p>No features pinned yet. Right-click any feature and select 'Pin to Dock' to add it here!</p>
+                            </div>
+                        )}
+                    </div>
 
-                    {/* Recent Features Section */}
-                    {recentFeaturesList.length > 0 && (
+                    {/* Recent Features Section (Conditional Rendering) */}
+                    {dockPreferences.showRecentSection && (
                         <div className="mb-6">
                             <div className="flex justify-between items-center mb-3">
                                 <h3 className="text-lg font-semibold text-text-primary">Recently Used</h3>
-                                {/* NEW: Clear Recent Button */}
-                                <button
-                                    onClick={handleClearRecentFeatures}
-                                    className="px-3 py-1 text-xs bg-background/80 text-text-secondary rounded-full hover:bg-background/60 transition-colors"
-                                >
-                                    Clear Recent
-                                </button>
+                                {recentFeaturesList.length > 0 && ( // Only show clear button if there are recents
+                                    <button
+                                        onClick={() => setShowClearRecentConfirm(true)} // Open confirmation modal
+                                        className="px-3 py-1 text-xs bg-background/80 text-text-secondary rounded-full hover:bg-background/60 transition-colors"
+                                        aria-label="Clear all recently used features"
+                                    >
+                                        Clear Recent
+                                    </button>
+                                )}
                             </div>
-                            <div className="flex flex-wrap gap-3 justify-center">
-                                {recentFeaturesList.map(feature => (
-                                    <FeatureButton
-                                        key={feature.id}
-                                        feature={feature}
-                                        onOpen={handleOpenFeature}
-                                        onContextMenu={handleOpenContextMenu}
-                                        isPinned={pinnedFeatureIds.includes(feature.id)}
-                                        // Recent features are not draggable for reordering
-                                    />
-                                ))}
-                            </div>
+                            {recentFeaturesList.length > 0 ? (
+                                <div className="flex flex-wrap gap-3 justify-center">
+                                    {recentFeaturesList.map(feature => (
+                                        <FeatureButton
+                                            key={feature.id}
+                                            feature={feature}
+                                            onOpen={handleOpenFeature}
+                                            onContextMenu={handleOpenContextMenu}
+                                            isPinned={pinnedFeatureIds.includes(feature.id)}
+                                            gridSize={dockPreferences.gridSize} // Pass gridSize
+                                            // Recent features are not draggable for reordering
+                                        />
+                                    ))}
+                                </div>
+                            ) : (
+                                // NEW: Empty state for recent features
+                                <div className="p-4 text-center text-text-secondary bg-background/50 rounded-lg border border-dashed border-border">
+                                    <p>No features used recently. Start using some features to see them here!</p>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -607,6 +735,7 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
                                     onOpen={handleOpenFeature}
                                     onContextMenu={handleOpenContextMenu}
                                     isPinned={pinnedFeatureIds.includes(feature.id)}
+                                    gridSize={dockPreferences.gridSize} // Pass gridSize
                                     // All features are not draggable for reordering
                                 />
                             ))
@@ -636,6 +765,21 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
                 <FeatureDetailsModal
                     feature={detailsModalFeature}
                     onClose={handleCloseDetailsModal}
+                />
+            )}
+
+            {/* Render ConfirmationModal if active */}
+            {showClearRecentConfirm && (
+                <ConfirmationModal
+                    title="Clear Recently Used Features?"
+                    message="Are you sure you want to clear your list of recently used features? This action cannot be undone."
+                    onConfirm={() => {
+                        handleClearRecentFeatures();
+                        setShowClearRecentConfirm(false);
+                    }}
+                    onCancel={() => setShowClearRecentConfirm(false)}
+                    confirmText="Clear"
+                    cancelText="Keep"
                 />
             )}
         </div>
