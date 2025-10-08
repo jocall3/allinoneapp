@@ -987,4 +987,3 @@ export const FeatureDock: React.FC<FeatureDockProps> = ({ onOpen }) => {
         </div>
     );
 };
-```
