@@ -1,4 +1,5 @@
-// Copyright James Burvel OÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢Callaghan III
+```typescript
+// Copyright James Burvel OÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢Callaghan III
 // President Citibank Demo Business Inc.
 
 import React, { lazy, Suspense, Component, ReactNode, useCallback, useEffect, useState, useRef } from 'react'; // Added useRef for LazyMount component
@@ -158,7 +159,8 @@ export const ErrorReporterContext = React.createContext<GlobalErrorReporterConfi
  *   <AppRouter />
  * </ErrorReporterProvider>
  */
-export const ErrorReporterProvider: React.FC<{ config: GlobalErrorReporterConfig; children: ReactNode }> = ({ config, children }) => {
+// FIX for "Expected > but found value" by removing React.FC generic type assertion
+export const ErrorReporterProvider = ({ config, children }: { config: GlobalErrorReporterConfig; children: ReactNode }) => {
     return (
         <ErrorReporterContext.Provider value={config}>
             {children}
@@ -277,6 +279,8 @@ export interface RobustLazyComponentOptions extends RetryOptions, Partial<Omit<E
     errorFallback?: ReactNode | ((error: Error, componentStack: string) => ReactNode);
     /** An optional unique key for the component, useful for preloading. */
     componentKey?: string;
+    /** An optional variant name for the component, used for A/B testing or feature flags. */
+    variant?: string;
 }
 
 /**
@@ -340,7 +344,7 @@ export function createRobustLazyComponent<T extends React.ComponentType<any>>(
             fallback: defaultOptions.errorFallback || defaultOptions.loadingFallback, // Prefer error-specific fallback, then loading fallback
             onError: defaultOptions.onError,
             boundaryName: defaultOptions.boundaryName,
-            context: { componentKey: defaultOptions.componentKey, exportName, ...defaultOptions.context },
+            context: { componentKey: defaultOptions.componentKey, exportName, variant: defaultOptions.variant, ...defaultOptions.context },
         };
 
         return (
@@ -352,7 +356,7 @@ export function createRobustLazyComponent<T extends React.ComponentType<any>>(
         );
     };
 
-    RobustWrapper.displayName = `RobustLazyComponent(${exportName})`;
+    RobustWrapper.displayName = `RobustLazyComponent(${exportName}${options?.variant ? `-${options.variant}` : ''})`;
     return RobustWrapper;
 }
 
@@ -560,13 +564,19 @@ export type ComponentPropsSchema<P extends object = any> = {
 /**
  * Interface for a registered component entry, including an optional props schema.
  */
-interface RegisteredComponentEntry {
+export interface RegisteredComponentEntry {
     component: React.ComponentType<any>;
     schema?: ComponentPropsSchema;
+    variantName?: string; // Added to indicate if it's a specific variant
 }
 
 type ExtendedComponentRegistry = Map<string, RegisteredComponentEntry>;
 const globalExtendedComponentRegistry: ExtendedComponentRegistry = new Map();
+
+// Helper to construct a component key, especially for variants
+function getRegistryKey(key: string, variant?: string): string {
+    return variant ? `${key}::${variant}` : key;
+}
 
 /**
  * Registers a React component (typically one created by `createRobustLazyComponent`) with a unique key.
@@ -574,70 +584,66 @@ const globalExtendedComponentRegistry: ExtendedComponentRegistry = new Map();
  * facilitating dynamic component loading and rendering based on configurations,
  * feature flags, or content management systems.
  *
+ * Optionally, a `variant` can be provided to register different versions of the same logical component.
+ *
  * @param key The unique string key for the component (e.g., 'DashboardPage', 'ProductCard').
  * @param component The React component to register.
  * @param schema An optional schema to validate the props passed to this component dynamically.
- * @throws {Error} If a component with the same key is already registered, indicating a potential conflict.
+ * @param variant An optional variant name (e.g., 'v2', 'abTest'). If provided, the component is registered as a variant.
+ * @throws {Error} If a component with the same key (and variant if specified) is already registered.
  *
  * @example
- * // In an application initialization module:
- * registerComponent('Dashboard', createRobustLazyComponent(() => import('./Dashboard'), 'Dashboard', { loadingFallback: <LoadingSpinner /> }));
+ * // Registering a default component:
+ * registerComponent('Dashboard', createRobustLazyComponent(() => import('./Dashboard'), 'Dashboard'));
  *
- * // With prop validation schema (e.g., using a simple validator function)
- * const dashboardSchema = {
- *   userId: (val: any) => typeof val === 'string' && val.length > 0,
- *   theme: (val: any) => ['light', 'dark'].includes(val),
- * };
- * registerComponent('ValidatedDashboard', createRobustLazyComponent(() => import('./ValidatedDashboard'), 'ValidatedDashboard'), dashboardSchema);
- *
- * // In a dynamic rendering component:
- * const ComponentToRender = getRegisteredComponent(someConfig.componentName);
- * if (ComponentToRender) {
- *   return <ComponentToRender {...someConfig.props} />;
- * } else {
- *   return <div>Error: Component '{someConfig.componentName}' not found.</div>;
- * }
+ * // Registering a variant of a component:
+ * registerComponent('ProductCard', createRobustLazyComponent(() => import('./ProductCardV1'), 'ProductCard'), undefined, 'v1');
+ * registerComponent('ProductCard', createRobustLazyComponent(() => import('./ProductCardV2'), 'ProductCard'), undefined, 'v2');
  */
-export function registerComponent(key: string, component: React.ComponentType<any>, schema?: ComponentPropsSchema): void {
-    if (globalExtendedComponentRegistry.has(key)) {
-        throw new Error(`Component with key '${key}' is already registered. Please use a unique key.`);
+export function registerComponent(key: string, component: React.ComponentType<any>, schema?: ComponentPropsSchema, variant?: string): void {
+    const registryKey = getRegistryKey(key, variant);
+    if (globalExtendedComponentRegistry.has(registryKey)) {
+        throw new Error(`Component with key '${registryKey}' is already registered. Please use a unique key or variant.`);
     }
-    globalExtendedComponentRegistry.set(key, { component, schema });
-    console.debug(`Component '${key}' registered successfully.`);
+    globalExtendedComponentRegistry.set(registryKey, { component, schema, variantName: variant });
+    console.debug(`Component '${registryKey}' registered successfully.`);
 }
 
 /**
- * Retrieves a previously registered React component by its key from the global registry.
+ * Retrieves a previously registered React component by its key and optional variant from the global registry.
  *
  * @param key The unique string key of the component (e.g., 'DashboardPage').
- * @returns The registered React component, or `undefined` if no component is found for the given key.
+ * @param variant An optional variant name to retrieve a specific version.
+ * @returns The registered React component, or `undefined` if no component is found for the given key/variant.
  */
-export function getRegisteredComponent(key: string): React.ComponentType<any> | undefined {
-    return globalExtendedComponentRegistry.get(key)?.component;
+export function getRegisteredComponent(key: string, variant?: string): React.ComponentType<any> | undefined {
+    return globalExtendedComponentRegistry.get(getRegistryKey(key, variant))?.component;
 }
 
 /**
- * Retrieves a previously registered React component entry (component and its schema) by its key.
+ * Retrieves a previously registered React component entry (component and its schema) by its key and optional variant.
  *
  * @param key The unique string key of the component.
+ * @param variant An optional variant name.
  * @returns The registered component entry, or `undefined`.
  */
-export function getRegisteredComponentEntry(key: string): RegisteredComponentEntry | undefined {
-    return globalExtendedComponentRegistry.get(key);
+export function getRegisteredComponentEntry(key: string, variant?: string): RegisteredComponentEntry | undefined {
+    return globalExtendedComponentRegistry.get(getRegistryKey(key, variant));
 }
 
 /**
  * A React hook for dynamically retrieving a registered component.
  *
  * @param componentKey The key of the component to retrieve.
+ * @param variant An optional variant name.
  * @returns The registered React component, or `undefined` if not found.
  */
-export function useDynamicComponent(componentKey: string): React.ComponentType<any> | undefined {
+export function useDynamicComponent(componentKey: string, variant?: string): React.ComponentType<any> | undefined {
     const [component, setComponent] = useState<React.ComponentType<any> | undefined>(undefined);
 
     useEffect(() => {
-        setComponent(getRegisteredComponent(componentKey));
-    }, [componentKey]);
+        setComponent(getRegisteredComponent(componentKey, variant));
+    }, [componentKey, variant]);
 
     return component;
 }
@@ -647,6 +653,7 @@ export function useDynamicComponent(componentKey: string): React.ComponentType<a
  */
 export interface ComponentConfig {
     componentKey: string;
+    variant?: string; // Added variant support
     props?: { [key: string]: any };
     /** Optional explicit `fallback` for this specific dynamic render if the component is not found. */
     fallback?: ReactNode;
@@ -663,8 +670,8 @@ export interface ComponentConfig {
  *
  * @param config The configuration object containing `componentKey` and `props`.
  * @param config.componentKey The key of the component to render, as registered via `registerComponent`.
+ * @param config.variant Optional variant of the component to render.
  * @param config.props Optional props to pass to the component.
- * @param options Additional rendering options, e.g., a fallback for unregistered components.
  * @returns The rendered React component or a fallback if not found/configured.
  *
  * @example
@@ -685,20 +692,24 @@ export interface ComponentConfig {
  * <DynamicComponentRenderer
  *   config={{ componentKey: 'NonExistentComponent', renderNullIfNotFound: true }}
  * /> // Renders null
+ *
+ * // With a specific variant:
+ * <DynamicComponentRenderer config={{ componentKey: 'ProductCard', variant: 'v2', props: { productId: 'abc' } }} />
  */
 export const DynamicComponentRenderer: React.FC<{
     config: ComponentConfig;
 }> = ({ config }) => {
-    const componentEntry = getRegisteredComponentEntry(config.componentKey);
+    const componentEntry = getRegisteredComponentEntry(config.componentKey, config.variant);
 
     if (!componentEntry || !componentEntry.component) {
         if (config.renderNullIfNotFound) {
             return null;
         }
-        console.warn(`Attempted to render unregistered component: '${config.componentKey}'`);
+        const displayKey = getRegistryKey(config.componentKey, config.variant);
+        console.warn(`Attempted to render unregistered component: '${displayKey}'`);
         return (config.fallback || (
             <div style={{ color: 'orange', padding: '10px', border: '1px dashed orange', borderRadius: '4px' }}>
-                Warning: Component '{config.componentKey}' not found in registry.
+                Warning: Component '{displayKey}' not found in registry.
             </div>
         )) as React.ReactElement;
     }
@@ -715,13 +726,13 @@ export const DynamicComponentRenderer: React.FC<{
                 if (Object.prototype.hasOwnProperty.call(componentEntry.schema, propName)) {
                     const validator = componentEntry.schema[propName];
                     if (typeof validator === 'function' && !validator(config.props[propName])) {
-                        console.error(`DynamicComponentRenderer: Prop validation failed for component '${config.componentKey}'. Prop '${propName}' is invalid.`, config.props[propName]);
+                        console.error(`DynamicComponentRenderer: Prop validation failed for component '${getRegistryKey(config.componentKey, config.variant)}'. Prop '${propName}' is invalid.`, config.props[propName]);
                         // Optionally throw or adjust props. For now, just log.
                     }
                 }
             }
         } catch (validationError: any) {
-            console.error(`DynamicComponentRenderer: Error during prop validation for component '${config.componentKey}':`, validationError);
+            console.error(`DynamicComponentRenderer: Error during prop validation for component '${getRegistryKey(config.componentKey, config.variant)}':`, validationError);
             // Decide how to handle validation errors: render an error fallback, filter props, etc.
             // For now, continue with the potentially invalid props or strip them.
             // Example: validatedProps = {}; // Clear props on severe validation failure
@@ -735,8 +746,8 @@ export const DynamicComponentRenderer: React.FC<{
         return (
             <ErrorBoundary
                 {...config.errorBoundaryProps}
-                boundaryName={config.errorBoundaryProps.boundaryName || `DynamicRendererBoundary-${config.componentKey}`}
-                context={{ componentKey: config.componentKey, ...config.errorBoundaryProps.context }}
+                boundaryName={config.errorBoundaryProps.boundaryName || `DynamicRendererBoundary-${getRegistryKey(config.componentKey, config.variant)}`}
+                context={{ componentKey: config.componentKey, variant: config.variant, ...config.errorBoundaryProps.context }}
             >
                 {componentElement}
             </ErrorBoundary>
@@ -914,25 +925,787 @@ export function clearComponentRegistry(): void {
 }
 
 /**
- * A utility to check if a component with a given key is already registered.
+ * A utility to check if a component with a given key and optional variant is already registered.
  * @param key The component key to check.
+ * @param variant An optional variant name.
  * @returns `true` if registered, `false` otherwise.
  */
-export function isComponentRegistered(key: string): boolean {
-    return globalExtendedComponentRegistry.has(key);
+export function isComponentRegistered(key: string, variant?: string): boolean {
+    return globalExtendedComponentRegistry.has(getRegistryKey(key, variant));
 }
 
 /**
- * An advanced `useDynamicComponent` hook that also returns the component's schema.
+ * An advanced `useDynamicComponent` hook that also returns the component's schema and variant name.
  * @param componentKey The key of the component.
+ * @param variant An optional variant name.
  * @returns An object containing the component and its schema, or `undefined` if not found.
  */
-export function useDynamicComponentEntry(componentKey: string): RegisteredComponentEntry | undefined {
+export function useDynamicComponentEntry(componentKey: string, variant?: string): RegisteredComponentEntry | undefined {
     const [entry, setEntry] = useState<RegisteredComponentEntry | undefined>(undefined);
 
     useEffect(() => {
-        setEntry(getRegisteredComponentEntry(componentKey));
-    }, [componentKey]);
+        setEntry(getRegisteredComponentEntry(componentKey, variant));
+    }, [componentKey, variant]);
 
     return entry;
 }
+
+// --- NEW FEATURE: FEATURE FLAG SYSTEM ---
+
+/**
+ * Configuration for a feature flag. Can be boolean, string, or number.
+ */
+export type FeatureFlagValue = boolean | string | number | undefined;
+
+/**
+ * Interface for the feature flag context.
+ */
+export interface FeatureFlagContextType {
+    /** Map of feature flag keys to their values. */
+    flags: Record<string, FeatureFlagValue>;
+    /** Function to get a feature flag value, with an optional default. */
+    getFlag: (key: string, defaultValue?: FeatureFlagValue) => FeatureFlagValue;
+    /** Function to update a feature flag value dynamically. */
+    setFlag: (key: string, value: FeatureFlagValue) => void;
+}
+
+/**
+ * React Context for feature flag management.
+ */
+export const FeatureFlagContext = React.createContext<FeatureFlagContextType | undefined>(undefined);
+
+/**
+ * Props for the FeatureFlagProvider component.
+ */
+export interface FeatureFlagProviderProps {
+    /** Initial feature flags. */
+    initialFlags?: Record<string, FeatureFlagValue>;
+    /** Children to render within the provider's scope. */
+    children: ReactNode;
+}
+
+/**
+ * A Provider component for managing and exposing feature flags to descendant components.
+ * Allows centralizing feature flag configuration and dynamic updates.
+ *
+ * @example
+ * <FeatureFlagProvider initialFlags={{ newDashboard: true, betaSearch: false }}>
+ *   <App />
+ * </FeatureFlagProvider>
+ */
+export const FeatureFlagProvider: React.FC<FeatureFlagProviderProps> = ({ initialFlags = {}, children }) => {
+    const [flags, setFlags] = useState<Record<string, FeatureFlagValue>>(initialFlags);
+
+    const getFlag = useCallback((key: string, defaultValue: FeatureFlagValue = false) => {
+        return flags[key] !== undefined ? flags[key] : defaultValue;
+    }, [flags]);
+
+    const setFlag = useCallback((key: string, value: FeatureFlagValue) => {
+        setFlags(prev => ({ ...prev, [key]: value }));
+        console.debug(`Feature flag '${key}' updated to: ${value}`);
+    }, []);
+
+    const contextValue = { flags, getFlag, setFlag };
+
+    return (
+        <FeatureFlagContext.Provider value={contextValue}>
+            {children}
+        </FeatureFlagContext.Provider>
+    );
+};
+
+/**
+ * A React hook to access feature flag values and management functions.
+ * @returns The `FeatureFlagContextType` object, or `undefined` if not within a `FeatureFlagProvider`.
+ *
+ * @example
+ * const { getFlag, setFlag } = useFeatureFlagContext();
+ * const isNewDashboardEnabled = getFlag('newDashboard', false);
+ *
+ * function MyComponent() {
+ *   const isBetaSearch = useFeatureFlag('betaSearch');
+ *   return isBetaSearch ? <BetaSearch /> : <OldSearch />;
+ * }
+ */
+export function useFeatureFlagContext(): FeatureFlagContextType {
+    const context = React.useContext(FeatureFlagContext);
+    if (context === undefined) {
+        throw new Error('useFeatureFlagContext must be used within a FeatureFlagProvider');
+    }
+    return context;
+}
+
+/**
+ * A convenient hook to directly get a feature flag's boolean value.
+ * @param key The key of the feature flag.
+ * @param defaultValue The default value if the flag is not set (defaults to `false`).
+ * @returns The boolean value of the feature flag.
+ */
+export function useFeatureFlag(key: string, defaultValue: boolean = false): boolean {
+    const { getFlag } = useFeatureFlagContext();
+    const value = getFlag(key, defaultValue);
+    return typeof value === 'boolean' ? value : !!value; // Convert to boolean if it's string/number
+}
+
+/**
+ * A component that conditionally renders its children based on a feature flag.
+ * If the flag is enabled (truthy), children are rendered; otherwise, `fallback` is rendered.
+ *
+ * @param props.flagKey The key of the feature flag to check.
+ * @param props.children The content to render if the flag is enabled.
+ * @param props.fallback Optional content to render if the flag is disabled. Defaults to `null`.
+ *
+ * @example
+ * <FeatureGate flagKey="newLayout">
+ *   <NewLayout />
+ * </FeatureGate>
+ *
+ * <FeatureGate flagKey="promoBanner" fallback={<span>No promo</span>}>
+ *   <PromoBanner />
+ * </FeatureGate>
+ */
+export const FeatureGate: React.FC<{ flagKey: string; children: ReactNode; fallback?: ReactNode }> = ({ flagKey, children, fallback = null }) => {
+    const isEnabled = useFeatureFlag(flagKey);
+    return <>{isEnabled ? children : fallback}</>;
+};
+
+// --- NEW FEATURE: GLOBAL MODAL/DIALOG SYSTEM ---
+
+export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
+
+/**
+ * Configuration options for a single modal instance.
+ */
+export interface ModalOptions {
+    /** A unique ID for this modal instance, if not provided, one will be generated. */
+    id?: string;
+    /** The title of the modal, displayed in the header. */
+    title?: ReactNode;
+    /** The main content of the modal. */
+    content: ReactNode;
+    /** Optional footer actions (e.g., buttons). */
+    footer?: ReactNode;
+    /** Whether the modal can be closed by clicking outside or pressing Escape. Defaults to true. */
+    closable?: boolean;
+    /** Callback when the modal is requested to close. */
+    onClose?: (id: string) => void;
+    /** Size of the modal. */
+    size?: ModalSize;
+    /** Custom CSS class for the modal overlay. */
+    overlayClassName?: string;
+    /** Custom CSS class for the modal content container. */
+    contentClassName?: string;
+    /** If true, the modal will not have a standard header (title, close button). */
+    hideHeader?: boolean;
+    /** If true, the modal will not have a standard footer. */
+    hideFooter?: boolean;
+}
+
+/**
+ * Represents an active modal in the global state.
+ */
+export interface ActiveModal extends ModalOptions {
+    id: string; // ID becomes mandatory once active
+}
+
+/**
+ * Interface for the Modal Context.
+ */
+export interface ModalContextType {
+    /** Opens a new modal. Returns the ID of the opened modal. */
+    openModal: (options: ModalOptions) => string;
+    /** Closes a specific modal by its ID. */
+    closeModal: (id: string) => void;
+    /** Closes all currently open modals. */
+    closeAllModals: () => void;
+    /** The list of currently active modals. */
+    activeModals: ActiveModal[];
+}
+
+/**
+ * React Context for global modal management.
+ */
+export const ModalContext = React.createContext<ModalContextType | undefined>(undefined);
+
+/**
+ * A Provider component for managing and exposing modal state and functions.
+ * It should typically wrap your entire application or a major section.
+ *
+ * @example
+ * <ModalProvider>
+ *   <GlobalModalContainer />
+ *   <App />
+ * </ModalProvider>
+ */
+export const ModalProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const [activeModals, setActiveModals] = useState<ActiveModal[]>([]);
+    const modalCounter = useRef(0);
+
+    const openModal = useCallback((options: ModalOptions) => {
+        const id = options.id || `modal-${modalCounter.current++}`;
+        const newModal: ActiveModal = { ...options, id };
+        setActiveModals(prev => [...prev, newModal]);
+        return id;
+    }, []);
+
+    const closeModal = useCallback((id: string) => {
+        setActiveModals(prev => {
+            const modalToClose = prev.find(m => m.id === id);
+            if (modalToClose && modalToClose.onClose) {
+                modalToClose.onClose(id);
+            }
+            return prev.filter(modal => modal.id !== id);
+        });
+    }, []);
+
+    const closeAllModals = useCallback(() => {
+        setActiveModals(prev => {
+            prev.forEach(modal => {
+                if (modal.onClose) {
+                    modal.onClose(modal.id);
+                }
+            });
+            return [];
+        });
+    }, []);
+
+    const contextValue = { openModal, closeModal, closeAllModals, activeModals };
+
+    return (
+        <ModalContext.Provider value={contextValue}>
+            {children}
+        </ModalContext.Provider>
+    );
+};
+
+/**
+ * A React hook to access modal management functions.
+ * @returns The `ModalContextType` object.
+ *
+ * @example
+ * const { openModal, closeModal } = useModal();
+ * openModal({ title: 'My Dialog', content: <p>Hello!</p> });
+ */
+export function useModal(): ModalContextType {
+    const context = React.useContext(ModalContext);
+    if (context === undefined) {
+        throw new Error('useModal must be used within a ModalProvider');
+    }
+    return context;
+}
+
+/**
+ * A minimal, unstyled modal component for `GlobalModalContainer`.
+ * Implement your actual modal UI components here or import from a UI library.
+ */
+const BasicModal: React.FC<{ modal: ActiveModal; onClose: (id: string) => void }> = ({ modal, onClose }) => {
+    const handleClose = useCallback(() => {
+        if (modal.closable !== false) {
+            onClose(modal.id);
+        }
+    }, [modal.id, modal.closable, onClose]);
+
+    // Handle Escape key to close
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape' && modal.closable !== false) {
+                handleClose();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [handleClose, modal.closable]);
+
+    const sizeStyles: Record<ModalSize, React.CSSProperties> = {
+        sm: { width: '300px' },
+        md: { width: '500px' },
+        lg: { width: '700px' },
+        xl: { width: '900px' },
+        full: { width: '95%', height: '95%' },
+    };
+
+    return (
+        <div
+            className={modal.overlayClassName}
+            style={{
+                position: 'fixed',
+                top: 0, left: 0, right: 0, bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000,
+                pointerEvents: modal.closable !== false ? 'auto' : 'none', // Allow clicks if closable
+            }}
+            onClick={modal.closable !== false ? handleClose : undefined} // Close on overlay click
+        >
+            <div
+                className={modal.contentClassName}
+                style={{
+                    backgroundColor: 'white',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                    padding: '20px',
+                    maxHeight: '90vh',
+                    overflowY: 'auto',
+                    position: 'relative',
+                    pointerEvents: 'auto', // Re-enable pointer events for modal content
+                    ...sizeStyles[modal.size || 'md'],
+                }}
+                onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
+            >
+                {!modal.hideHeader && (modal.title || (modal.closable !== false && onClose)) && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                        <h3 style={{ margin: 0 }}>{modal.title}</h3>
+                        {modal.closable !== false && (
+                            <button
+                                onClick={handleClose}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    fontSize: '1.5em',
+                                    cursor: 'pointer',
+                                    lineHeight: '1',
+                                    padding: '0 5px',
+                                }}
+                            >
+                                &times;
+                            </button>
+                        )}
+                    </div>
+                )}
+                <div style={{ paddingBottom: modal.footer ? '15px' : '0' }}>{modal.content}</div>
+                {!modal.hideFooter && modal.footer && (
+                    <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #eee', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                        {modal.footer}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+/**
+ * A component that renders all currently active modals managed by the `ModalProvider`.
+ * This should typically be placed high in your component tree, often directly within `ModalProvider`.
+ *
+ * @example
+ * <ModalProvider>
+ *   <GlobalModalContainer /> // Renders modals here
+ *   <App />
+ * </ModalProvider>
+ */
+export const GlobalModalContainer: React.FC = () => {
+    const { activeModals, closeModal } = useModal();
+
+    if (activeModals.length === 0) {
+        return null;
+    }
+
+    return (
+        <>
+            {activeModals.map((modal) => (
+                <BasicModal key={modal.id} modal={modal} onClose={closeModal} />
+            ))}
+        </>
+    );
+};
+
+
+// --- NEW FEATURE: GLOBAL TOAST/NOTIFICATION SYSTEM ---
+
+export type ToastType = 'info' | 'success' | 'warning' | 'error';
+
+/**
+ * Configuration options for a single toast message.
+ */
+export interface ToastMessageOptions {
+    /** A unique ID for this toast, if not provided, one will be generated. */
+    id?: string;
+    /** The type of toast, influencing its styling. */
+    type?: ToastType;
+    /** The content of the toast message. */
+    message: ReactNode;
+    /** Duration in milliseconds before the toast auto-dismisses. Set to 0 for permanent. Defaults to 5000ms. */
+    duration?: number;
+    /** Callback function when the toast is dismissed (either by timeout or user action). */
+    onDismiss?: (id: string) => void;
+    /** If true, a close button will be displayed. Defaults to true. */
+    closable?: boolean;
+    /** Custom CSS class for the toast container. */
+    className?: string;
+}
+
+/**
+ * Represents an active toast message in the global state.
+ */
+export interface ActiveToast extends ToastMessageOptions {
+    id: string; // ID becomes mandatory once active
+    type: ToastType; // Type becomes mandatory with default once active
+    duration: number; // Duration becomes mandatory with default once active
+}
+
+/**
+ * Interface for the Toast Context.
+ */
+export interface ToastContextType {
+    /** Adds a new toast message. Returns the ID of the new toast. */
+    addToast: (options: ToastMessageOptions) => string;
+    /** Dismisses a specific toast message by its ID. */
+    dismissToast: (id: string) => void;
+}
+
+/**
+ * React Context for global toast management.
+ */
+export const ToastContext = React.createContext<ToastContextType | undefined>(undefined);
+
+/**
+ * A Provider component for managing and exposing toast messages.
+ * It should typically wrap your entire application or a major section.
+ *
+ * @example
+ * <ToastProvider>
+ *   <GlobalToastContainer />
+ *   <App />
+ * </ToastProvider>
+ */
+export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const [activeToasts, setActiveToasts] = useState<ActiveToast[]>([]);
+    const toastCounter = useRef(0);
+
+    const addToast = useCallback((options: ToastMessageOptions) => {
+        const id = options.id || `toast-${toastCounter.current++}`;
+        const newToast: ActiveToast = {
+            ...options,
+            id,
+            type: options.type || 'info',
+            duration: options.duration !== undefined ? options.duration : 5000,
+            closable: options.closable !== undefined ? options.closable : true,
+        };
+        setActiveToasts(prev => [...prev, newToast]);
+        return id;
+    }, []);
+
+    const dismissToast = useCallback((id: string) => {
+        setActiveToasts(prev => {
+            const toastToDismiss = prev.find(t => t.id === id);
+            if (toastToDismiss && toastToDismiss.onDismiss) {
+                toastToDismiss.onDismiss(id);
+            }
+            return prev.filter(toast => toast.id !== id);
+        });
+    }, []);
+
+    const contextValue = { addToast, dismissToast };
+
+    return (
+        <ToastContext.Provider value={contextValue}>
+            {children}
+        </ToastContext.Provider>
+    );
+};
+
+/**
+ * A React hook to access toast management functions.
+ * @returns The `ToastContextType` object.
+ *
+ * @example
+ * const { addToast } = useToast();
+ * addToast({ type: 'success', message: 'Item saved!' });
+ */
+export function useToast(): ToastContextType {
+    const context = React.useContext(ToastContext);
+    if (context === undefined) {
+        throw new Error('useToast must be used within a ToastProvider');
+    }
+    return context;
+}
+
+/**
+ * A minimal, unstyled toast component for `GlobalToastContainer`.
+ * Implement your actual toast UI components here or import from a UI library.
+ */
+const BasicToast: React.FC<{ toast: ActiveToast; onDismiss: (id: string) => void }> = ({ toast, onDismiss }) => {
+    const timerRef = useRef<NodeJS.Timeout>();
+
+    const handleDismiss = useCallback(() => {
+        clearTimeout(timerRef.current!);
+        onDismiss(toast.id);
+    }, [toast.id, onDismiss]);
+
+    useEffect(() => {
+        if (toast.duration > 0) {
+            timerRef.current = setTimeout(handleDismiss, toast.duration);
+        }
+        return () => clearTimeout(timerRef.current!);
+    }, [toast.duration, handleDismiss]);
+
+    const typeColors: Record<ToastType, { background: string; border: string; color: string }> = {
+        info: { background: '#e0f7fa', border: '#00bcd4', color: '#006064' },
+        success: { background: '#e8f5e9', border: '#4caf50', color: '#1b5e20' },
+        warning: { background: '#fff8e1', border: '#ffc107', color: '#ff6f00' },
+        error: { background: '#ffebee', border: '#f44336', color: '#b71c1c' },
+    };
+
+    const colors = typeColors[toast.type];
+
+    return (
+        <div
+            className={toast.className}
+            style={{
+                ...colors,
+                padding: '12px 16px',
+                borderRadius: '8px',
+                marginBottom: '10px',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                minWidth: '280px',
+                maxWidth: '400px',
+            }}
+        >
+            <div style={{ flexGrow: 1, marginRight: toast.closable ? '10px' : '0' }}>{toast.message}</div>
+            {toast.closable && (
+                <button
+                    onClick={handleDismiss}
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '1.2em',
+                        cursor: 'pointer',
+                        lineHeight: '1',
+                        color: colors.color,
+                        padding: '0 5px',
+                    }}
+                >
+                    &times;
+                </button>
+            )}
+        </div>
+    );
+};
+
+/**
+ * A component that renders all currently active toast messages managed by the `ToastProvider`.
+ * This should typically be placed high in your component tree, often directly within `ToastProvider`,
+ * or at a fixed position on the screen (e.g., top-right).
+ *
+ * @example
+ * <ToastProvider>
+ *   <GlobalToastContainer /> // Renders toasts here
+ *   <App />
+ * </ToastProvider>
+ */
+export const GlobalToastContainer: React.FC<{ position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'top-center' | 'bottom-center' }> = ({ position = 'top-right' }) => {
+    const { activeToasts, dismissToast } = useToast();
+
+    const containerStyles: React.CSSProperties = {
+        position: 'fixed',
+        zIndex: 1001,
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '20px',
+        pointerEvents: 'none', // Allow clicks to pass through if no toast
+    };
+
+    switch (position) {
+        case 'top-right':
+            containerStyles.top = 0;
+            containerStyles.right = 0;
+            containerStyles.alignItems = 'flex-end';
+            break;
+        case 'top-left':
+            containerStyles.top = 0;
+            containerStyles.left = 0;
+            containerStyles.alignItems = 'flex-start';
+            break;
+        case 'bottom-right':
+            containerStyles.bottom = 0;
+            containerStyles.right = 0;
+            containerStyles.alignItems = 'flex-end';
+            containerStyles.flexDirection = 'column-reverse'; // Stack from bottom up
+            break;
+        case 'bottom-left':
+            containerStyles.bottom = 0;
+            containerStyles.left = 0;
+            containerStyles.alignItems = 'flex-start';
+            containerStyles.flexDirection = 'column-reverse'; // Stack from bottom up
+            break;
+        case 'top-center':
+            containerStyles.top = 0;
+            containerStyles.left = '50%';
+            containerStyles.transform = 'translateX(-50%)';
+            containerStyles.alignItems = 'center';
+            break;
+        case 'bottom-center':
+            containerStyles.bottom = 0;
+            containerStyles.left = '50%';
+            containerStyles.transform = 'translateX(-50%)';
+            containerStyles.alignItems = 'center';
+            containerStyles.flexDirection = 'column-reverse';
+            break;
+    }
+
+    if (activeToasts.length === 0) {
+        return null;
+    }
+
+    return (
+        <div style={containerStyles}>
+            {activeToasts.map((toast) => (
+                <div key={toast.id} style={{ pointerEvents: 'auto' }}> {/* Re-enable pointer events for individual toast */}
+                    <BasicToast toast={toast} onDismiss={dismissToast} />
+                </div>
+            ))}
+        </div>
+    );
+};
+
+// --- NEW UTILITY HOOKS ---
+
+/**
+ * React hook that returns the previous value of a state or prop.
+ *
+ * @param value The current value.
+ * @returns The previous value.
+ *
+ * @example
+ * function Counter() {
+ *   const [count, setCount] = useState(0);
+ *   const prevCount = usePrevious(count);
+ *
+ *   return (
+ *     <div>
+ *       <p>Current: {count}, Previous: {prevCount}</p>
+ *       <button onClick={() => setCount(count + 1)}>Increment</button>
+ *     </div>
+ *   );
+ * }
+ */
+export function usePrevious<T>(value: T): T | undefined {
+    const ref = useRef<T>();
+    useEffect(() => {
+        ref.current = value;
+    }, [value]);
+    return ref.current;
+}
+
+/**
+ * React hook for debouncing a value. The returned value will only update
+ * after a specified delay since the last update of the input value.
+ *
+ * @param value The value to debounce.
+ * @param delay The debounce delay in milliseconds.
+ * @returns The debounced value.
+ *
+ * @example
+ * function SearchInput() {
+ *   const [searchTerm, setSearchTerm] = useState('');
+ *   const debouncedSearchTerm = useDebounce(searchTerm, 500);
+ *
+ *   useEffect(() => {
+ *     if (debouncedSearchTerm) {
+ *       console.log('Fetching results for:', debouncedSearchTerm);
+ *       // Perform API call here
+ *     }
+ *   }, [debouncedSearchTerm]);
+ *
+ *   return (
+ *     <input
+ *       type="text"
+ *       value={searchTerm}
+ *       onChange={(e) => setSearchTerm(e.target.value)}
+ *       placeholder="Search..."
+ *     />
+ *   );
+ * }
+ */
+export function useDebounce<T>(value: T, delay: number): T {
+    const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedValue(value);
+        }, delay);
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [value, delay]);
+
+    return debouncedValue;
+}
+
+/**
+ * React hook for throttling a callback function.
+ * The function will be called at most once within the specified `delay` period.
+ *
+ * @param callback The function to throttle.
+ * @param delay The throttling delay in milliseconds.
+ * @returns A throttled version of the callback function.
+ *
+ * @example
+ * function ScrollComponent() {
+ *   const handleScroll = () => console.log('Scrolled!');
+ *   const throttledScroll = useThrottledCallback(handleScroll, 200);
+ *
+ *   useEffect(() => {
+ *     window.addEventListener('scroll', throttledScroll);
+ *     return () => window.removeEventListener('scroll', throttledScroll);
+ *   }, [throttledScroll]);
+ *
+ *   return <div style={{ height: '2000px' }}>Scroll me!</div>;
+ * }
+ */
+export function useThrottledCallback<T extends (...args: any[]) => void>(
+    callback: T,
+    delay: number
+): T {
+    const callbackRef = useRef(callback);
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastArgsRef = useRef<any[]>();
+    const lastThisRef = useRef<any>();
+    const lastExecutionTimeRef = useRef(0);
+
+    useEffect(() => {
+        callbackRef.current = callback;
+    }, [callback]);
+
+    const throttledCallback = useCallback(function(this: any, ...args: any[]) {
+        const now = Date.now();
+        lastArgsRef.current = args;
+        lastThisRef.current = this;
+
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+        }
+
+        if (now - lastExecutionTimeRef.current > delay) {
+            callbackRef.current.apply(this, args);
+            lastExecutionTimeRef.current = now;
+        } else {
+            timeoutRef.current = setTimeout(() => {
+                if (lastArgsRef.current && lastThisRef.current) {
+                    callbackRef.current.apply(lastThisRef.current, lastArgsRef.current);
+                    lastExecutionTimeRef.current = Date.now();
+                    lastArgsRef.current = undefined;
+                    lastThisRef.current = undefined;
+                }
+            }, delay - (now - lastExecutionTimeRef.current));
+        }
+    }, [delay]);
+
+    useEffect(() => {
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, [throttledCallback]);
+
+    return throttledCallback as T;
+}
+```
