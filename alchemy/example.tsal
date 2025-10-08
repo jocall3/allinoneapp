@@ -1,4 +1,372 @@
-// Copyright James Burvel O’Callaghan III
+// Copyright James Burvel Oâ€™Callaghan III
 // President Citibank Demo Business Inc.
 
-{h�
+/**
+ * @file This file contains example financial utility functions and data structures,
+ * demonstrating capabilities akin to a "Citibank Alchemy" financial toolkit.
+ * It provides core financial calculations and data representations for investment
+ * and loan analysis, designed with high quality and market-readiness in mind.
+ */
+
+/**
+ * Interface representing a generic financial investment with its core attributes.
+ */
+export interface Investment {
+  /**
+   * Unique identifier for the investment.
+   */
+  id: string;
+  /**
+   * The initial principal amount invested.
+   */
+  principal: number;
+  /**
+   * The annual interest rate as a decimal (e.g., 0.05 for 5%).
+   */
+  annualRate: number;
+  /**
+   * The number of compounding periods per year (e.g., 1 for annually, 12 for monthly).
+   */
+  compoundingPeriodsPerYear: number;
+  /**
+   * The total number of years for the investment.
+   */
+  years: number;
+  /**
+   * Optional description for the investment.
+   */
+  description?: string;
+  /**
+   * Date when the investment started.
+   */
+  startDate: Date;
+}
+
+/**
+ * Interface representing a financial loan with its core attributes.
+ */
+export interface Loan {
+  /**
+   * Unique identifier for the loan.
+   */
+  id: string;
+  /**
+   * The initial principal amount of the loan.
+   */
+  principal: number;
+  /**
+   * The annual interest rate as a decimal (e.g., 0.05 for 5%).
+   */
+  annualRate: number;
+  /**
+   * The total number of months for the loan term.
+   */
+  totalMonths: number;
+  /**
+   * Optional description for the loan.
+   */
+  description?: string;
+  /**
+   * Date when the loan originated.
+   */
+  originationDate: Date;
+}
+
+/**
+ * Calculates the future value of an investment with compound interest.
+ *
+ * @param investment The Investment object containing principal, annual rate, compounding periods, and years.
+ * @returns The future value of the investment.
+ * @throws {Error} if any input parameter is invalid (e.g., negative principal).
+ */
+export function calculateFutureValue(investment: Investment): number {
+  const { principal, annualRate, compoundingPeriodsPerYear, years } = investment;
+
+  if (principal < 0 || annualRate < 0 || compoundingPeriodsPerYear <= 0 || years < 0) {
+    throw new Error('Invalid input: Principal, annual rate, compounding periods, and years must be non-negative, and compounding periods must be positive.');
+  }
+
+  const ratePerPeriod = annualRate / compoundingPeriodsPerYear;
+  const totalPeriods = compoundingPeriodsPerYear * years;
+
+  // FV = P * (1 + r/n)^(nt)
+  const futureValue = principal * Math.pow((1 + ratePerPeriod), totalPeriods);
+  return parseFloat(futureValue.toFixed(2)); // Round to 2 decimal places for currency
+}
+
+/**
+ * Calculates the present value of a future amount.
+ *
+ * @param futureValue The target future value.
+ * @param annualRate The annual interest rate as a decimal.
+ * @param compoundingPeriodsPerYear The number of compounding periods per year.
+ * @param years The number of years until the future value is reached.
+ * @returns The present value required to reach the future value.
+ * @throws {Error} if any input parameter is invalid.
+ */
+export function calculatePresentValue(
+  futureValue: number,
+  annualRate: number,
+  compoundingPeriodsPerYear: number,
+  years: number
+): number {
+  if (futureValue < 0 || annualRate < 0 || compoundingPeriodsPerYear <= 0 || years < 0) {
+    throw new Error('Invalid input: Future value, annual rate, compounding periods, and years must be non-negative, and compounding periods must be positive.');
+  }
+  if (annualRate === 0 && years > 0) {
+      return futureValue; // If rate is zero, PV is FV
+  }
+  const ratePerPeriod = annualRate / compoundingPeriodsPerYear;
+  const totalPeriods = compoundingPeriodsPerYear * years;
+
+  // PV = FV / (1 + r/n)^(nt)
+  const presentValue = futureValue / Math.pow((1 + ratePerPeriod), totalPeriods);
+  return parseFloat(presentValue.toFixed(2));
+}
+
+/**
+ * Calculates the total compound interest earned over an investment period.
+ *
+ * @param investment The Investment object.
+ * @returns The total compound interest earned.
+ * @throws {Error} if any input parameter is invalid.
+ */
+export function calculateTotalCompoundInterest(investment: Investment): number {
+  const futureValue = calculateFutureValue(investment);
+  return parseFloat((futureValue - investment.principal).toFixed(2));
+}
+
+/**
+ * Calculates the monthly payment for a loan using the amortization formula.
+ * This assumes fixed monthly payments over the loan term.
+ *
+ * @param loan The Loan object containing principal, annual rate, and total months.
+ * @returns The fixed monthly payment amount.
+ * @throws {Error} if any input parameter is invalid.
+ */
+export function calculateMonthlyLoanPayment(loan: Loan): number {
+  const { principal, annualRate, totalMonths } = loan;
+
+  if (principal <= 0 || annualRate < 0 || totalMonths <= 0) {
+    throw new Error('Invalid input: Principal and total months must be positive, annual rate non-negative.');
+  }
+
+  const monthlyRate = annualRate / 12;
+
+  if (monthlyRate === 0) {
+    return parseFloat((principal / totalMonths).toFixed(2));
+  }
+
+  // M = P [ i(1 + i)^n ] / [ (1 + i)^n – 1]
+  const monthlyPayment = principal * (monthlyRate * Math.pow((1 + monthlyRate), totalMonths)) /
+                         (Math.pow((1 + monthlyRate), totalMonths) - 1);
+
+  return parseFloat(monthlyPayment.toFixed(2));
+}
+
+/**
+ * Represents a consolidated financial summary for an investment.
+ */
+export interface InvestmentSummary {
+  /**
+   * The unique identifier of the investment.
+   */
+  id: string;
+  /**
+   * The original principal amount.
+   */
+  initialPrincipal: number;
+  /**
+   * The calculated future value of the investment.
+   */
+  finalValue: number;
+  /**
+   * The total interest earned.
+   */
+  totalInterestEarned: number;
+  /**
+   * The effective annual rate (same as annualRate for simplicity here, but could be adjusted).
+   */
+  effectiveAnnualRate: number;
+  /**
+   * The duration of the investment in years.
+   */
+  durationYears: number;
+  /**
+   * A human-readable description of the investment outcome.
+   */
+  summaryDescription: string;
+}
+
+/**
+ * Generates a comprehensive summary report for a given investment.
+ *
+ * @param investment The Investment object to summarize.
+ * @returns An InvestmentSummary object.
+ * @throws {Error} if the calculation for future value fails.
+ */
+export function generateInvestmentSummary(investment: Investment): InvestmentSummary {
+  const futureValue = calculateFutureValue(investment);
+  const totalInterestEarned = calculateTotalCompoundInterest(investment);
+
+  return {
+    id: investment.id,
+    initialPrincipal: investment.principal,
+    finalValue: futureValue,
+    totalInterestEarned: totalInterestEarned,
+    effectiveAnnualRate: investment.annualRate, // For simplicity, assuming nominal = effective here
+    durationYears: investment.years,
+    summaryDescription: `Investment #${investment.id} starting with $${investment.principal.toFixed(2)} at ` +
+                        `${(investment.annualRate * 100).toFixed(2)}% annual rate, compounded ` +
+                        `${investment.compoundingPeriodsPerYear} times per year over ${investment.years} years, ` +
+                        `will grow to $${futureValue.toFixed(2)}, earning $${totalInterestEarned.toFixed(2)} in interest.`
+  };
+}
+
+/**
+ * A utility class to manage a collection of investments, providing portfolio-level insights.
+ */
+export class InvestmentPortfolio {
+  private investments: Map<string, Investment>;
+
+  /**
+   * Creates an instance of InvestmentPortfolio.
+   */
+  constructor() {
+    this.investments = new Map<string, Investment>();
+  }
+
+  /**
+   * Adds a new investment to the portfolio.
+   *
+   * @param investment The Investment object to add.
+   * @returns void
+   * @throws {Error} if an investment with the same ID already exists.
+   */
+  public addInvestment(investment: Investment): void {
+    if (this.investments.has(investment.id)) {
+      throw new Error(`Investment with ID '${investment.id}' already exists in the portfolio.`);
+    }
+    this.investments.set(investment.id, investment);
+  }
+
+  /**
+   * Retrieves an investment by its ID.
+   *
+   * @param id The ID of the investment to retrieve.
+   * @returns The Investment object or undefined if not found.
+   */
+  public getInvestment(id: string): Investment | undefined {
+    return this.investments.get(id);
+  }
+
+  /**
+   * Removes an investment from the portfolio by its ID.
+   *
+   * @param id The ID of the investment to remove.
+   * @returns True if the investment was removed, false otherwise.
+   */
+  public removeInvestment(id: string): boolean {
+    return this.investments.delete(id);
+  }
+
+  /**
+   * Calculates the total future value of all investments in the portfolio.
+   *
+   * @returns The combined future value of the portfolio.
+   */
+  public calculatePortfolioFutureValue(): number {
+    let totalFutureValue = 0;
+    for (const investment of Array.from(this.investments.values())) {
+      try {
+        totalFutureValue += calculateFutureValue(investment);
+      } catch (error) {
+        console.warn(`Could not calculate future value for investment ${investment.id}:`, error);
+        // Optionally, rethrow or handle specific errors based on business logic
+      }
+    }
+    return parseFloat(totalFutureValue.toFixed(2));
+  }
+
+  /**
+   * Generates summary reports for all investments in the portfolio.
+   *
+   * @returns An array of InvestmentSummary objects.
+   */
+  public getAllInvestmentSummaries(): InvestmentSummary[] {
+    return Array.from(this.investments.values()).map(investment => generateInvestmentSummary(investment));
+  }
+
+  /**
+   * Provides a high-level overview of the entire portfolio.
+   *
+   * @returns An object containing portfolio statistics.
+   */
+  public getPortfolioOverview(): { totalInvestments: number; totalPrincipal: number; estimatedFutureValue: number; } {
+    let totalPrincipal = 0;
+    for (const investment of Array.from(this.investments.values())) {
+      totalPrincipal += investment.principal;
+    }
+
+    const estimatedFutureValue = this.calculatePortfolioFutureValue();
+
+    return {
+      totalInvestments: this.investments.size,
+      totalPrincipal: parseFloat(totalPrincipal.toFixed(2)),
+      estimatedFutureValue: estimatedFutureValue,
+    };
+  }
+}
+
+/**
+ * A set of predefined constants for common financial scenarios.
+ */
+export const FinancialConstants = {
+  /**
+   * Standard annual compounding period.
+   */
+  COMPOUNDING_ANNUALLY: 1,
+  /**
+   * Standard semi-annual compounding period.
+   */
+  COMPOUNDING_SEMI_ANNUALLY: 2,
+  /**
+   * Standard quarterly compounding period.
+   */
+  COMPOUNDING_QUARTERLY: 4,
+  /**
+   * Standard monthly compounding period.
+   */
+  COMPOUNDING_MONTHLY: 12,
+  /**
+   * Standard daily compounding period (approximate).
+   */
+  COMPOUNDING_DAILY: 365,
+  /**
+   * Represents a typical long-term investment horizon in years.
+   */
+  LONG_TERM_HORIZON_YEARS: 10,
+  /**
+   * Represents a typical short-term investment horizon in years.
+   */
+  SHORT_TERM_HORIZON_YEARS: 3,
+};
+
+/**
+ * A utility class for generating unique IDs, potentially for financial instruments.
+ * This is a simple implementation and can be replaced with UUID library for production.
+ */
+export class IdGenerator {
+  private static counter: number = 0;
+
+  /**
+   * Generates a simple sequential ID.
+   * In a real-world scenario, this might use UUIDs or a more robust system.
+   * @param prefix Optional prefix for the ID.
+   * @returns A unique string ID.
+   */
+  public static generateUniqueId(prefix: string = "FIN-"): string {
+    IdGenerator.counter++;
+    return `${prefix}${Date.now()}-${IdGenerator.counter}`;
+  }
+}
