@@ -1,0 +1,20 @@
+name: Force Reset Repo to Commit b88eb01
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+permissions:
+  contents: write  # allow push access
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Force reset to b88eb01
+        run: |
+          git init
+          git remote add origin https://github.com/jocall3/allinoneapp.git
+          git fetch origin
+          git checkout b88eb01f83b848761da2a1a80b1f25b728b1dc86
+          git branch -M main
+          git push origin main --force
