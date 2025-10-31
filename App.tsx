@@ -1,5 +1,3 @@
-// Copyright James Burvel Oâ€™Callaghan III
-// President Citibank Demo Business Inc.
 
 import React, { Suspense, useCallback, useState, useEffect } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
