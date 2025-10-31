@@ -1,20 +1,62 @@
-name: Force Reset Repo to Commit b88eb01
+# ============================================================
+# 🟢 Rollback + Deploy to GitHub Pages
+# Resets repo to commit 6b4ccacae4eef2aa2e7c3df5b247fe595627fd92
+# and deploys static files to https://jocall3.github.io/allinoneapp/
+# ============================================================
+
+name: Rollback and Deploy to GitHub Pages
 
 on:
-  workflow_dispatch:  # Manual trigger only
+  workflow_dispatch: # manual trigger only
 
 permissions:
-  contents: write  # allow push access
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
-  rollback:
+  rollback_and_deploy:
+    name: Rollback and Deploy
     runs-on: ubuntu-latest
+
     steps:
-      - name: Force reset to b88eb01
+      # ----------------------------------------------------
+      # Step 1: Force reset to the specific commit
+      # ----------------------------------------------------
+      - name: Force reset repository to commit
         run: |
           git init
           git remote add origin https://github.com/jocall3/allinoneapp.git
           git fetch origin
-          git checkout b88eb01f83b848761da2a1a80b1f25b728b1dc86
+          git checkout 6b4ccacae4eef2aa2e7c3df5b247fe595627fd92
           git branch -M main
           git push origin main --force
+          echo "✅ Repo reset to commit 6b4ccacae4eef2aa2e7c3df5b247fe595627fd92"
+
+      # ----------------------------------------------------
+      # Step 2: Configure Pages
+      # ----------------------------------------------------
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v5
+
+      # ----------------------------------------------------
+      # Step 3: Upload static files from the repo root
+      # ----------------------------------------------------
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      # ----------------------------------------------------
+      # Step 4: Deploy to GitHub Pages
+      # ----------------------------------------------------
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Confirm deployment
+        run: echo "🚀 Deployed successfully to ${{ steps.deployment.outputs.page_url }}"
