@@ -19,10 +19,10 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Reset to commit b88eb01
+      - name: Reset to commit d4cac2d68705154fa8398561a5acdc76ba61b35c
         run: |
           git fetch origin main
-          git reset --hard b88eb01f83b848761da2a1a80b1f25b728b1dc86
+          git reset --hard d4cac2d68705154fa8398561a5acdc76ba61b35c
           git push origin main --force
 
       - name: Confirm rollback
