@@ -1,4 +1,4 @@
-```typescript
+
 // Copyright James Burvel OÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢Callaghan III
 // President Citibank Demo Business Inc.
 
@@ -1708,4 +1708,3 @@ export function useThrottledCallback<T extends (...args: any[]) => void>(
 
     return throttledCallback as T;
 }
-```
