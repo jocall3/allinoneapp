@@ -1,0 +1,30 @@
+name: Revert Repository to Commit b88eb01
+
+on:
+  workflow_dispatch:  # Allows manual trigger from the Actions tab
+
+jobs:
+  revert:
+    name: Reset main branch to commit b88eb01
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # fetch full history to allow reset
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Reset to commit b88eb01
+        run: |
+          git fetch origin main
+          git reset --hard b88eb01f83b848761da2a1a80b1f25b728b1dc86
+          git push origin main --force
+
+      - name: Confirm rollback
+        run: |
+          echo "✅ Repo successfully reset to commit b88eb01"
