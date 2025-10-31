@@ -1,62 +1,34 @@
 # ============================================================
-# 🟢 Rollback + Deploy to GitHub Pages
-# Resets repo to commit 6b4ccacae4eef2aa2e7c3df5b247fe595627fd92
-# and deploys static files to https://jocall3.github.io/allinoneapp/
+# 🧹 GitHub Actions: Reset main branch to a specific commit
+# ------------------------------------------------------------
+# This workflow will FORCE RESET your main branch to:
+#   6b4ccacae4eef2aa2e7c3df5b247fe595627fd92
+# No builds, no deploys — just a clean rollback.
 # ============================================================
 
-name: Rollback and Deploy to GitHub Pages
+name: Reset main branch to 6b4ccacae4eef2aa2e7c3df5b247fe595627fd92
 
 on:
-  workflow_dispatch: # manual trigger only
+  workflow_dispatch:  # run manually from the Actions tab
 
 permissions:
-  contents: write
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  contents: write  # required for pushing changes
 
 jobs:
-  rollback_and_deploy:
-    name: Rollback and Deploy
+  reset:
+    name: Force Reset main branch
     runs-on: ubuntu-latest
 
     steps:
-      # ----------------------------------------------------
-      # Step 1: Force reset to the specific commit
-      # ----------------------------------------------------
-      - name: Force reset repository to commit
+      - name: Force reset repository
         run: |
+          echo "⚙️ Initializing temporary git repo..."
           git init
           git remote add origin https://github.com/jocall3/allinoneapp.git
           git fetch origin
+          echo "✅ Checking out commit 6b4ccacae4eef2aa2e7c3df5b247fe595627fd92"
           git checkout 6b4ccacae4eef2aa2e7c3df5b247fe595627fd92
           git branch -M main
+          echo "🚀 Forcing push to origin/main..."
           git push origin main --force
-          echo "✅ Repo reset to commit 6b4ccacae4eef2aa2e7c3df5b247fe595627fd92"
-
-      # ----------------------------------------------------
-      # Step 2: Configure Pages
-      # ----------------------------------------------------
-      - name: Setup GitHub Pages
-        uses: actions/configure-pages@v5
-
-      # ----------------------------------------------------
-      # Step 3: Upload static files from the repo root
-      # ----------------------------------------------------
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: '.'
-
-      # ----------------------------------------------------
-      # Step 4: Deploy to GitHub Pages
-      # ----------------------------------------------------
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
-      - name: Confirm deployment
-        run: echo "🚀 Deployed successfully to ${{ steps.deployment.outputs.page_url }}"
+          echo "✅ Repository successfully reset to 6b4ccacae4eef2aa2e7c3df5b247fe595627fd92"
