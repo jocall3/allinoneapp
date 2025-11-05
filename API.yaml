@@ -4289,4 +4289,4 @@ components:
           type: object
           example: {"address": "123 Main St", "city": "Anytown"}
         userConsent: {type: boolean, default: true}
-        ---
+---
