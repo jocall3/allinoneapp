@@ -1,7 +1,7 @@
 openapi: 3.0.3
-version: 1.0 
 info:
   title: "Demo Bank API: The Quantum Core - Publisher Edition"
+  version: "1.0"
   description: |
     Welcome to the **Quantum Core 3.0**, the pinnacle of financial technology, meticulously engineered to power the Demo Bank experience. This is far more than a mere set of endpoints; it is the living, breathing neural network of a next-generation financial ecosystem, poised to redefine digital banking for a global audience.
     
